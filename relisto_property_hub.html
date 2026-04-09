@@ -1,0 +1,1649 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ReLISTO – Property Management Hub</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --lime:       #AEC637;
+  --sage:       #CDDD8E;
+  --warm-gray:  #B8BA91;
+  --charcoal:   #555552;
+  --cream:      #DFE1CF;
+  --off-white:  #F7F8F2;
+  --border:     #D8DAC5;
+  --ink:        #2E2E2C;
+  --muted:      #777770;
+  --done-bg:    #F0F5DC;
+  --done-text:  #6A7A20;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Nunito Sans','Helvetica',sans-serif;background:var(--off-white);color:var(--ink);min-height:100vh;padding-bottom:80px;}
+
+/* ── HEADER ── */
+header{background:var(--charcoal);padding:0;position:sticky;top:0;z-index:100;box-shadow:0 3px 16px rgba(0,0,0,0.25);}
+.header-inner{display:flex;align-items:center;justify-content:space-between;padding:14px 32px;gap:16px;}
+.header-brand{display:flex;align-items:center;gap:12px;}
+.header-title{font-size:14px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:var(--sage);line-height:1.2;}
+.header-title small{display:block;font-size:9px;font-weight:400;color:rgba(255,255,255,0.4);letter-spacing:2px;margin-top:2px;}
+.progress-wrap{display:flex;flex-direction:column;align-items:flex-end;gap:4px;}
+.progress-lbl{font-size:10px;color:rgba(255,255,255,0.4);letter-spacing:1px;text-transform:uppercase;}
+.progress-bar{width:140px;height:6px;background:rgba(255,255,255,0.15);border-radius:3px;overflow:hidden;}
+.progress-fill{height:100%;background:var(--lime);border-radius:3px;transition:width 0.4s;}
+.progress-count{font-size:11px;font-weight:700;color:var(--lime);}
+
+/* ── SYNC BAR ── */
+.sync-bar{background:var(--lime);color:var(--charcoal);font-size:11px;font-weight:700;padding:5px 32px;display:flex;align-items:center;gap:8px;}
+.sync-dot{width:8px;height:8px;border-radius:50%;background:var(--charcoal);}
+.sync-dot.ok{background:#1a5c1a;}
+.sync-dot.error{background:#8b0000;}
+.sync-dot.loading{background:var(--charcoal);animation:pulse 0.8s infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
+
+/* ── TAB BAR ── */
+.tab-bar{background:#fff;border-bottom:2px solid var(--border);padding:0 32px;display:flex;align-items:flex-end;gap:0;overflow-x:auto;position:sticky;top:57px;z-index:90;}
+.tab{font-size:12px;font-weight:700;padding:12px 18px;border:none;background:none;color:var(--muted);cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px;white-space:nowrap;transition:all 0.15s;letter-spacing:0.3px;display:flex;align-items:center;gap:7px;}
+.tab:hover{color:var(--ink);}
+.tab.active{color:var(--charcoal);border-bottom-color:var(--lime);}
+.tab .tab-pct{font-size:10px;background:var(--border);color:var(--muted);padding:2px 6px;border-radius:10px;font-weight:700;}
+.tab.active .tab-pct{background:var(--lime);color:var(--charcoal);}
+.tab-dashboard{color:var(--charcoal);font-weight:800;}
+.tab-add{color:var(--lime);border:1.5px dashed var(--lime);border-radius:5px;margin:6px 0 6px 8px;padding:5px 12px;font-size:11px;}
+.tab-add:hover{background:var(--lime);color:var(--charcoal);border-style:solid;}
+
+/* ── TOOLBAR ── */
+.toolbar{padding:10px 32px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;border-bottom:1px solid var(--border);background:var(--off-white);}
+.btn{font-family:'Nunito Sans',sans-serif;font-size:11px;font-weight:700;padding:6px 13px;border-radius:4px;border:1.5px solid var(--border);background:#fff;color:var(--ink);cursor:pointer;letter-spacing:0.5px;text-transform:uppercase;transition:all 0.15s;white-space:nowrap;}
+.btn:hover{background:var(--charcoal);color:#fff;border-color:var(--charcoal);}
+.btn.primary{background:var(--lime);color:var(--charcoal);border-color:var(--lime);}
+.btn.primary:hover{background:#8fa528;border-color:#8fa528;}
+.btn.accent{background:var(--charcoal);color:#fff;border-color:var(--charcoal);}
+
+/* ── LEGEND ── */
+.legend{padding:7px 32px;display:flex;gap:16px;flex-wrap:wrap;border-bottom:1px solid var(--border);background:#fff;}
+.legend-item{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);}
+.leg-dot{width:10px;height:10px;border-radius:2px;flex-shrink:0;}
+
+/* ── MAIN ── */
+.main{max-width:920px;margin:22px auto;padding:0 18px;display:flex;flex-direction:column;gap:14px;}
+
+/* ── SECTION CARD ── */
+.section-card{background:#fff;border-radius:8px;border:1.5px solid var(--border);overflow:hidden;box-shadow:0 1px 6px rgba(0,0,0,0.04);transition:box-shadow 0.2s;}
+.section-card:hover{box-shadow:0 4px 18px rgba(0,0,0,0.09);}
+.section-header{display:flex;align-items:center;gap:12px;padding:14px 18px;cursor:pointer;user-select:none;border-bottom:1.5px solid var(--border);}
+.sec-num{font-size:10px;font-weight:700;letter-spacing:2px;color:var(--charcoal);background:var(--sage);padding:3px 9px;border-radius:3px;white-space:nowrap;flex-shrink:0;}
+.sec-title{font-size:14px;font-weight:700;flex:1;color:var(--charcoal);}
+.sec-prog{font-size:11px;color:var(--muted);white-space:nowrap;}
+.sec-tog{font-size:12px;color:var(--muted);transition:transform 0.2s;}
+.sec-tog.open{transform:rotate(180deg);}
+.sec-body{display:none;}
+.sec-body.open{display:block;}
+
+/* ── TASK ROW ── */
+.task-row{padding:14px 18px;border-bottom:1px solid #f0edea;transition:background 0.15s;}
+.task-row:last-child{border-bottom:none;}
+.task-row:hover{background:#fafaf5;}
+.task-row.done{background:var(--done-bg);}
+.task-top{display:flex;align-items:flex-start;gap:10px;margin-bottom:11px;}
+.task-check{width:19px;height:19px;accent-color:var(--lime);cursor:pointer;margin-top:2px;flex-shrink:0;}
+.task-label{font-size:13px;font-weight:600;line-height:1.5;flex:1;color:var(--ink);transition:all 0.2s;}
+.task-row.done .task-label{text-decoration:line-through;color:var(--done-text);opacity:0.65;}
+.done-tag{font-size:10px;background:var(--lime);color:var(--charcoal);padding:2px 7px;border-radius:3px;font-weight:700;margin-left:8px;vertical-align:middle;}
+
+/* ── DATE CARDS ── */
+.date-row{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:11px;padding-left:29px;}
+.date-card{display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:9px;padding:8px 13px;min-width:100px;border:2px solid var(--border);background:#fff;gap:3px;transition:box-shadow 0.15s,border-color 0.15s;}
+.date-card:hover{box-shadow:0 2px 8px rgba(0,0,0,0.08);}
+.date-card.start-card{border-color:#b3d4e8;background:#f0f7fc;}
+.date-card.start-card.active{border-color:#2471a3;background:#daeaf7;}
+.date-card.due-card{border-color:#f0c080;background:#fffaf3;}
+.date-card.due-card.active{border-color:#e08020;}
+.date-card.done-card{border-color:#c8dfa0;background:#f5fbe8;}
+.date-card.done-card.active{border-color:var(--lime);background:var(--done-bg);}
+.date-card.tappable{cursor:pointer;border-style:dashed;}
+.date-card.tappable:hover{border-style:solid;}
+.date-card.start-card.tappable:hover{border-color:#2471a3;background:#daeaf7;}
+.date-card.done-card.tappable:hover{border-color:var(--lime);background:var(--done-bg);}
+.dc-icon{font-size:16px;line-height:1;}
+.dc-lbl{font-size:9px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);}
+.date-card.start-card .dc-lbl{color:#2471a3;}
+.date-card.due-card .dc-lbl{color:#b06a00;}
+.date-card.done-card .dc-lbl{color:var(--done-text);}
+.dc-val{font-size:12px;font-weight:700;color:var(--ink);}
+.dc-hint{font-size:10px;color:var(--muted);font-weight:400;}
+.dc-input-wrap input[type=date]{font-family:'Nunito Sans',sans-serif;font-size:12px;font-weight:700;border:none;background:transparent;color:inherit;outline:none;width:110px;text-align:center;cursor:pointer;padding:0;}
+
+/* ── NOTES ── */
+.notes-area{padding-left:29px;display:flex;flex-direction:column;gap:8px;}
+.notes-block{display:flex;flex-direction:column;gap:3px;}
+.notes-hdr{display:flex;align-items:center;gap:6px;font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);font-weight:700;}
+.notes-hdr.field{color:var(--charcoal);}
+.notes-input{font-family:'Nunito Sans',sans-serif;font-size:12px;border:1px solid var(--border);border-radius:5px;padding:6px 10px;background:var(--off-white);color:var(--ink);width:100%;resize:vertical;min-height:36px;line-height:1.5;transition:border-color 0.15s;}
+.notes-input:focus{outline:none;border-color:var(--lime);}
+.notes-input::placeholder{color:#c0bdb5;}
+.badge{font-size:9px;font-weight:800;padding:2px 7px;border-radius:3px;letter-spacing:1px;text-transform:uppercase;}
+.badge.instr{background:var(--lime);color:var(--charcoal);}
+.badge.field{background:var(--warm-gray);color:var(--charcoal);}
+
+/* ── ADD TASK ── */
+.add-task-row{padding:9px 18px;border-top:1px dashed var(--border);background:var(--off-white);display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.add-task-btn{font-size:12px;font-weight:700;color:var(--lime);background:none;border:1.5px dashed var(--lime);border-radius:5px;padding:5px 13px;cursor:pointer;transition:all 0.15s;}
+.add-task-btn:hover{background:var(--lime);color:var(--charcoal);border-style:solid;}
+.add-task-input-wrap{display:flex;align-items:center;gap:7px;flex:1;flex-wrap:wrap;}
+.add-task-input{font-size:13px;border:1.5px solid var(--lime);border-radius:5px;padding:5px 11px;flex:1;min-width:160px;color:var(--ink);outline:none;background:#fff;font-family:'Nunito Sans',sans-serif;}
+.custom-badge{font-size:9px;background:var(--sage);color:var(--charcoal);padding:2px 6px;border-radius:3px;font-weight:700;margin-left:6px;vertical-align:middle;letter-spacing:0.5px;text-transform:uppercase;}
+.delete-task-btn{background:none;border:1.5px solid #e0c0c0;color:#c0392b;border-radius:4px;width:24px;height:24px;font-size:11px;cursor:pointer;flex-shrink:0;transition:all 0.15s;margin-left:auto;}
+.delete-task-btn:hover{background:#c0392b;color:#fff;border-color:#c0392b;}
+
+/* ── DASHBOARD ── */
+.dashboard{max-width:920px;margin:22px auto;padding:0 18px;}
+.dash-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;margin-bottom:28px;}
+.dash-card{background:#fff;border:1.5px solid var(--border);border-radius:10px;padding:20px;cursor:pointer;transition:all 0.2s;position:relative;overflow:hidden;}
+.dash-card:hover{box-shadow:0 6px 20px rgba(0,0,0,0.1);border-color:var(--lime);transform:translateY(-1px);}
+.dash-card-icon{font-size:28px;margin-bottom:10px;}
+.dash-card-name{font-size:15px;font-weight:800;color:var(--charcoal);margin-bottom:6px;}
+.dash-card-stats{font-size:12px;color:var(--muted);margin-bottom:12px;}
+.dash-card-bar{height:6px;background:var(--border);border-radius:3px;overflow:hidden;margin-bottom:6px;}
+.dash-card-fill{height:100%;background:var(--lime);border-radius:3px;transition:width 0.4s;}
+.dash-card-pct{font-size:20px;font-weight:800;color:var(--lime);position:absolute;top:18px;right:18px;}
+.dash-overdue{font-size:11px;color:#c0392b;font-weight:700;}
+.dash-section-title{font-size:13px;font-weight:800;color:var(--charcoal);letter-spacing:1px;text-transform:uppercase;margin-bottom:12px;padding-bottom:6px;border-bottom:2px solid var(--border);}
+.dash-combined-bar{background:#fff;border:1.5px solid var(--border);border-radius:10px;padding:20px;margin-bottom:14px;}
+.dash-combined-row{display:flex;align-items:center;gap:12px;margin-bottom:10px;}
+.dash-combined-row:last-child{margin-bottom:0;}
+.dcr-name{font-size:12px;font-weight:700;color:var(--charcoal);width:160px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.dcr-bar-wrap{flex:1;height:12px;background:var(--border);border-radius:6px;overflow:hidden;}
+.dcr-bar{height:100%;background:var(--lime);border-radius:6px;transition:width 0.4s;}
+.dcr-pct{font-size:11px;font-weight:700;color:var(--charcoal);width:36px;text-align:right;}
+
+/* ── MODAL ── */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(30,30,28,0.72);z-index:200;align-items:center;justify-content:center;padding:18px;}
+.modal-bg.open{display:flex;}
+.modal{background:#fff;border-radius:10px;width:100%;max-width:820px;max-height:90vh;overflow-y:auto;padding:32px;position:relative;box-shadow:0 12px 48px rgba(0,0,0,0.35);}
+.modal-close{position:absolute;top:14px;right:18px;background:none;border:none;font-size:22px;cursor:pointer;color:var(--muted);}
+.modal h2{font-size:18px;font-weight:800;color:var(--charcoal);margin-bottom:18px;}
+.chart-axis{display:flex;margin-left:200px;margin-bottom:5px;}
+.chart-axis span{flex:1;font-size:10px;color:var(--muted);text-align:center;}
+.tl-row{display:flex;align-items:center;gap:8px;margin-bottom:5px;}
+.tl-label{font-size:10px;width:190px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.tl-bar-wrap{flex:1;height:14px;background:#eee;border-radius:4px;position:relative;min-width:280px;}
+.tl-bar{height:100%;border-radius:4px;position:absolute;display:flex;align-items:center;justify-content:flex-end;padding-right:5px;}
+.tl-bar-txt{font-size:9px;color:#fff;font-weight:700;white-space:nowrap;}
+.tl-done-line{position:absolute;top:-3px;height:20px;width:3px;background:var(--lime);border-radius:2px;z-index:2;}
+.sec-divider{font-size:10px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin:12px 0 5px;padding-bottom:4px;border-bottom:1px solid var(--border);}
+.no-data{font-size:13px;color:var(--muted);text-align:center;padding:36px;border:2px dashed var(--border);border-radius:8px;}
+.report-table{width:100%;border-collapse:collapse;font-size:12px;margin-top:10px;}
+.report-table th{background:var(--charcoal);color:#fff;padding:7px 10px;text-align:left;font-size:11px;letter-spacing:0.5px;}
+.report-table td{padding:6px 10px;border-bottom:1px solid var(--border);}
+.report-table tr:hover td{background:var(--off-white);}
+.status-over{color:#c0392b;font-weight:700;}
+
+/* ── ADD CHECKLIST MODAL ── */
+.new-checklist-modal{max-width:400px;}
+.new-checklist-modal input{font-family:'Nunito Sans',sans-serif;font-size:14px;border:2px solid var(--border);border-radius:6px;padding:10px 14px;width:100%;margin:8px 0 16px;color:var(--ink);outline:none;}
+.new-checklist-modal input:focus{border-color:var(--lime);}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--charcoal);color:#fff;padding:9px 20px;border-radius:6px;font-size:13px;font-weight:600;z-index:999;box-shadow:0 4px 16px rgba(0,0,0,0.25);}
+
+@media(max-width:620px){
+  .header-inner,.sync-bar,.toolbar,.legend{padding-left:12px;padding-right:12px;}
+  .tab-bar{padding:0 8px;}
+  .main,.dashboard{margin:12px auto;}
+  .task-row{padding:12px 12px;}
+  .section-header{padding:12px 12px;}
+  .date-row,.notes-area{padding-left:0;}
+  .modal{padding:18px 12px;}
+  .tl-label{width:110px;}
+  .chart-axis{margin-left:120px;}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div class="header-brand">
+      <div class="header-title">
+        ReLISTO
+        <small>Property Management Hub</small>
+      </div>
+    </div>
+    <div class="progress-wrap">
+      <div class="progress-lbl">Overall Progress</div>
+      <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+      <div class="progress-count" id="progressCount">0 / 0</div>
+    </div>
+  </div>
+  <div class="sync-bar">
+    <div class="sync-dot" id="syncDot"></div>
+    <span id="syncMsg">Connecting…</span>
+  </div>
+</header>
+
+<!-- Tab Bar -->
+<div class="tab-bar" id="tabBar">
+  <button class="tab tab-dashboard active" onclick="switchTab('__dashboard__')">📊 Dashboard</button>
+  <!-- checklist tabs injected here -->
+  <button class="tab tab-add" onclick="openNewChecklistModal()">+ New Checklist</button>
+</div>
+
+<!-- Toolbar -->
+<div class="toolbar" id="toolbar">
+  <button class="btn primary" onclick="openModal('timeline')">📊 Timeline</button>
+  <button class="btn primary" onclick="openModal('report')">📋 Report</button>
+  <button class="btn" onclick="expandAll()">Expand All</button>
+  <button class="btn" onclick="collapseAll()">Collapse All</button>
+  <button class="btn" onclick="syncNow()">☁ Sync</button>
+  <button class="btn accent" onclick="showBinInfo()">🔗 Share URL</button>
+  <button class="btn" onclick="exportCSV()">⬇ CSV</button>
+</div>
+
+<!-- Legend -->
+<div class="legend">
+  <div class="legend-item"><div class="leg-dot" style="background:#b3d4e8;border:1.5px dashed #2471a3"></div>▶ Tap to Start</div>
+  <div class="legend-item"><div class="leg-dot" style="background:#f0c080"></div>📅 Due Date</div>
+  <div class="legend-item"><div class="leg-dot" style="background:var(--lime);border:1.5px dashed var(--done-text)"></div>⬜ Tap when Done</div>
+  <div class="legend-item"><div class="leg-dot" style="background:var(--warm-gray)"></div>💾 Auto-saves</div>
+</div>
+
+<!-- Content area -->
+<div id="contentArea"></div>
+
+<!-- Timeline / Report Modal -->
+<div class="modal-bg" id="modalBg">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <h2 id="modalTitle">Timeline</h2>
+    <div id="modalContent"></div>
+  </div>
+</div>
+
+<!-- New Checklist Modal -->
+<div class="modal-bg" id="newChecklistBg">
+  <div class="modal new-checklist-modal">
+    <button class="modal-close" onclick="closeNewChecklist()">✕</button>
+    <h2>New Checklist</h2>
+    <label style="font-size:12px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:1px">Checklist Name</label>
+    <input type="text" id="newChecklistName" placeholder="e.g. Pest Control" onkeydown="if(event.key==='Enter')confirmNewChecklist()">
+    <button class="btn primary" onclick="confirmNewChecklist()" style="width:100%;padding:10px">Create Checklist</button>
+  </div>
+</div>
+
+<script>
+/* ── CONFIG ─────────────────────────────────────────────────── */
+const MASTER_KEY       = 'YOUR_MASTER_KEY_HERE';
+const DEFAULT_PROPERTY = 'ReLISTO';
+/* ─────────────────────────────────────────────────────────────── */
+
+/* ── BUILT-IN CHECKLISTS ─────────────────────────────────────── */
+const BUILT_IN_CHECKLISTS = {
+  'Trash Management': {
+    icon: '🗑',
+    sections: [
+      { id:'tr_s1', num:'01', title:'Initial Cleanup & Baseline', tasks:[
+        { t:'Clean all trash cans (interior/exterior)', instr:'Inspect both indoor and outdoor cans. Wash with disinfectant, remove residue, dry completely before relining.' },
+        { t:'Ensure all trash cans are lined', instr:'Use appropriate bag sizes per can. Check liner security — bags must fully cover interior lip.' },
+        { t:'Remove all loose trash from floors and common areas', instr:'Walk all common areas, hallways, parking. Document before/after photos.' },
+        { t:'Clean and sanitize all trash rooms/areas', instr:'Use EPA-approved disinfectant. Scrub floors, walls, door handles. Ventilate rooms after.' },
+        { t:'Ensure trash areas are sealed (no pest entry points)', instr:'Inspect door seals, gaps, drains. Notify maintenance if any pest entry points are found.' }
+      ]},
+      { id:'tr_s2', num:'02', title:'Define Trash System', tasks:[
+        { t:'Define 75% capacity rule', instr:'Cans should be emptied when 75% full — never wait until overflowing. Document rule in SOP.' },
+        { t:'Define schedule for emptying floor trash cans', instr:'Set recurring schedule. Minimum once daily for high-traffic areas, twice for kitchens.' },
+        { t:'Define schedule for transporting trash to main bins', instr:'Assign specific times. Coordinate with pickup days to avoid overflow.' },
+        { t:'Define schedule for moving bins to street', instr:'Match Recology pickup schedule. Record pickup days for each property.' },
+        { t:'Assign responsibilities (office staff, RM, PM)', instr:'Create RACI chart. Every role must have a named backup person.' },
+        { t:'Document full trash SOP', instr:'SOP must cover all 7 sections. Upload to AppFolio after completion.' }
+      ]},
+      { id:'tr_s3', num:'03', title:'Staffing & Accountability', tasks:[
+        { t:'Engage resident manager and require plan', instr:'Schedule meeting. RM must submit a written plan within 5 business days of engagement.' },
+        { t:'Define roles and responsibilities by position', instr:'Document each role in writing. Include office staff, RM, PM, and any contractors.' },
+        { t:'Create escalation protocol for issues', instr:'Issues must be escalated within 24hrs. Define chain: RM → PM → Director.' },
+        { t:'Define tenant violation process', instr:'Review lease addendum. Document warning → notice → fine escalation steps.' }
+      ]},
+      { id:'tr_s4', num:'04', title:'Audit System', tasks:[
+        { t:'Create daily audit protocol (office staff)', instr:'Checklist must cover all trash areas. Results logged in AppFolio daily.' },
+        { t:'Create weekend audit protocol (resident manager)', instr:'RM performs Saturday and Sunday audits. Report sent to PM by Sunday 8pm.' },
+        { t:'Create PM audit process (monthly/biweekly)', instr:'PM conducts surprise audits. Use photo documentation every audit.' },
+        { t:'Implement 3-week audit trial', instr:'Run trial with full logging. Review results weekly. Adjust schedule if needed.' },
+        { t:'Define reporting chain for issues', instr:'All audit issues reported same day. Unresolved issues escalate after 48hrs.' }
+      ]},
+      { id:'tr_s5', num:'05', title:'Tenant Communication', tasks:[
+        { t:'Create and post signage', instr:'Bilingual signage at all trash areas. Font minimum 18pt. Include pickup days.' },
+        { t:'Develop tenant communication materials', instr:'Email template + door flyer. Reviewed by PM before distribution.' },
+        { t:'Establish tenant reporting process (full cans, misuse)', instr:'Provide phone number or email for tenant reports. Acknowledge within 24hrs.' },
+        { t:'Draft lease addendum for tenant responsibilities', instr:'Legal review required. Addendum must address improper disposal, bulk items, fines.' },
+        { t:'Coordinate rollout with leasing team', instr:'Brief leasing team before tenant communications go out. Answer Q&A at rollout.' }
+      ]},
+      { id:'tr_s6', num:'06', title:'Vendor & Cost Control', tasks:[
+        { t:'Contact Recology and gather account details', instr:'Collect account number, contact name, pickup schedule, special item procedures.' },
+        { t:'Establish baseline monthly costs', instr:'Pull 3 months of Recology invoices. Document baseline in AppFolio.' },
+        { t:'Identify cost-saving opportunities', instr:'Evaluate bin size, pickup frequency, recycling vs landfill split.' },
+        { t:'Document fines and penalties', instr:'Record all fines with date, amount, reason. Identify recurring violations.' },
+        { t:'Present findings to management', instr:'Schedule meeting within 2 weeks of data collection. Prepare 1-page summary.' }
+      ]},
+      { id:'tr_s7', num:'07', title:'AppFolio Documentation', tasks:[
+        { t:'Add notes to property page', instr:'Include pickup days, vendor contact, and special instructions in property notes.' },
+        { t:'Create Utilities/Trash folder', instr:'Folder must be accessible to all staff. Use standard naming convention.' },
+        { t:'Create "General Information – Trash" documentation', instr:'Cover schedule, SOP link, contacts, fines history, and any exceptions.' },
+        { t:'Upload SOP and account details', instr:'PDF format. Version-controlled. Notify team via AppFolio message when uploaded.' }
+      ]},
+      { id:'tr_s8', num:'08', title:'Final Validation', tasks:[
+        { t:'All trash cans clean, lined, and odor-free', instr:'Final walk-through with PM present. Sign-off required before close-out.' },
+        { t:'No trash outside receptacles', instr:'Check parking lot, hallways, bin areas. Zero tolerance at validation.' },
+        { t:'No pests or evidence of pests', instr:'Document any pest evidence with photos. Pest sighting = immediate escalation.' },
+        { t:'Trash system functioning daily without failure', instr:'Review 2 weeks of audit logs before validation. No gaps allowed.' },
+        { t:'Staff can explain process and responsibilities', instr:'Verbal quiz with each staff member. Document responses. All must pass.' }
+      ]}
+    ]
+  },
+  'Security': {
+    icon: '🔒',
+    sections: [
+      { id:'sec_s0', num:'00', title:'Prior Work Review & Validation (Post Street)', tasks:[
+        { t:'Dawn to review prior project scope document (875 Post St.)', instr:'Locate the 875 Post St. scope document. Review in full before any fieldwork begins.' },
+        { t:'Determine usability of document (accuracy, completeness, relevance)', instr:'Assess whether the document reflects current conditions. Flag outdated sections.' },
+        { t:'Conduct walkthrough using document as reference', instr:'Bring printed or digital copy on walkthrough. Compare document to actual field conditions.' },
+        { t:'Verify in field: door locations, lock types, condition of hardware, installation feasibility', instr:'Check each item against the prior scope. Note discrepancies with photos.' },
+        { t:'Identify gaps between prior scope and current security requirements', instr:'List every item in the current plan that is missing or incorrect in the prior scope.' },
+        { t:'Extract usable information: door inventory, lock counts, access control points', instr:'Pull verified items from the prior document into the current working plan.' },
+        { t:'Integrate validated items into current security plan', instr:'Update the master security plan with all confirmed field-verified data.' },
+        { t:'Flag decision items: lock standard, Swiftlane compatibility, fire code, installation sequencing', instr:'Create a decision log. Each flagged item needs a responsible party and deadline.' }
+      ]},
+      { id:'sec_s1', num:'01', title:'Initial Security Audit & Baseline', tasks:[
+        { t:'Walk all properties (Broadway, Post)', instr:'Complete walkthrough of both properties. Document start and end times. Bring checklist.' },
+        { t:'Inventory ALL doors (front, rear, side, boiler, bathrooms)', instr:'Number and photograph every door. Record location, type, and current condition.' },
+        { t:'Identify all unsecured / non-compliant doors', instr:'Flag any door that does not meet current security standards. Tag physically if possible.' },
+        { t:'Inventory all exterior entry points requiring cameras', instr:'List every exterior point. Note current camera coverage and gaps.' },
+        { t:'Inspect current Swiftlane installations (mounting + condition)', instr:'Check each Swiftlane unit for physical security, tampering, and proper mounting.' }
+      ]},
+      { id:'sec_s2', num:'02', title:'Door Security & Stress Testing', tasks:[
+        { t:'Test all exterior doors for self-closing + self-latching', instr:'Open each door fully and release. Must close and latch without assistance.' },
+        { t:'Perform full stress test: push test, pull test, shake test, bypass test', instr:'Apply firm force in all directions. Attempt bypass via credit card shimming. Record pass/fail.' },
+        { t:'Verify doors cannot be easily propped open', instr:'Check for prop damage, worn stops, or missing hardware.' },
+        { t:'Confirm all locks function properly (no slip / misalignment)', instr:'Test lock engagement on every exterior door. Deadbolts must fully extend and retract cleanly.' },
+        { t:'Confirm fire/life safety compliance (free egress)', instr:'All exit doors must open freely from inside without a key.' },
+        { t:'Document pass / fail for each door', instr:'Complete door-by-door pass/fail log. Upload to AppFolio with photos.' }
+      ]},
+      { id:'sec_s3', num:'03', title:'Door Repairs & Hardening', tasks:[
+        { t:'Install/adjust door closers where needed', instr:'Order correct closer size per door weight. Adjust spring tension after install.' },
+        { t:'Repair or replace faulty locks', instr:'Replace any lock that failed stress test. Use approved lock standard.' },
+        { t:'Realign strike plates / latches', instr:'Latch must engage cleanly with no resistance. Adjust strike plate position as needed.' },
+        { t:'Reinforce weak door frames', instr:'Install door frame reinforcement kit on any frame showing flex or gap during stress test.' },
+        { t:'Install signage: "DO NOT PROP DOOR OPEN"', instr:'Install at eye level on all exterior doors. Use weatherproof signs for exterior locations.' }
+      ]},
+      { id:'sec_s4', num:'04', title:'Special Access Control Areas', tasks:[
+        { t:'Ensure boiler rooms are locked at all times', instr:'Verify keyed lock is installed and functioning. Only authorized staff should have key access.' },
+        { t:'Ensure utility / storage rooms are secured', instr:'All utility and storage rooms must have functioning keyed locks. Audit key holder list.' },
+        { t:'Verify bathroom doors: lock from inside, emergency access from outside', instr:'Test privacy lock engagement. Verify emergency release works from exterior.' }
+      ]},
+      { id:'sec_s5', num:'05', title:'Swiftlane Hardening', tasks:[
+        { t:'Obtain bids for steel backing plate and metal cage enclosure', instr:'Request minimum 2 bids per item. Specify Swiftlane model dimensions for accurate quotes.' },
+        { t:'Approve vendor and schedule install', instr:'PM approves vendor selection. Schedule within 5 business days of approval.' },
+        { t:'Install reinforced mounting system', instr:'Contractor installs per approved bid scope. PM or RM must be present during install.' },
+        { t:'Verify device cannot be removed or tampered with', instr:'Attempt to manually remove or shift unit after install. Must be fully immovable.' }
+      ]},
+      { id:'sec_s6', num:'06', title:'Swiftlane System Capabilities', tasks:[
+        { t:'Contact Swiftlane support', instr:'Call or chat with Swiftlane support. Have account number and device serial numbers ready.' },
+        { t:'Confirm forced entry alert capability', instr:'Ask support to confirm this feature is active on your account and firmware version.' },
+        { t:'Confirm door sensor compatibility', instr:'Verify which door sensor models are compatible with your Swiftlane units.' },
+        { t:'Enable real-time alerts (mobile + email)', instr:'Configure in Swiftlane admin portal. Test alert delivery to all configured recipients.' },
+        { t:'Configure user notifications (Owner / Don / Staff)', instr:'Set up notification groups in Swiftlane. Confirm each person receives a test alert.' },
+        { t:'Test forced entry scenario + confirm alerts', instr:'Simulate forced entry event. Confirm alert fires within 60 seconds to all recipients.' }
+      ]},
+      { id:'sec_s7', num:'07', title:'Camera Coverage – Exterior Doors', tasks:[
+        { t:'Install camera at every exterior door', instr:'One camera per exterior door minimum. Camera must cover full door frame and approach.' },
+        { t:'Ensure camera captures: approach, door interaction, entry/exit', instr:'Review test footage. All three zones must be visible and identifiable.' },
+        { t:'Enable motion detection on all cameras', instr:'Configure motion zones in camera system. Set sensitivity appropriate for each location.' },
+        { t:'Verify night visibility (low light / IR)', instr:'Test footage at night or in low-light conditions. IR must activate automatically.' },
+        { t:'Confirm remote access (mobile + desktop)', instr:'Access live and recorded footage from mobile app and desktop browser.' },
+        { t:'Set recording retention (minimum 7–14 days)', instr:'Configure storage settings for minimum 7 days. 14 days preferred. Confirm storage capacity.' }
+      ]},
+      { id:'sec_s8', num:'08', title:'Camera System Usability (Dawn Test)', tasks:[
+        { t:'Test footage retrieval (specific time/event)', instr:'Dawn retrieves footage from a specific date/time without assistance. Must complete in under 5 minutes.' },
+        { t:'Test exporting video clip', instr:'Export a 1-minute clip to USB or email. Verify file is playable on standard device.' },
+        { t:'Test mobile access', instr:'Access live feed and playback from mobile phone.' },
+        { t:'Evaluate ease of use (manager-level)', instr:'Rate system 1–5 for ease of use. Document specific pain points or limitations observed.' },
+        { t:'Decide: keep / upgrade / replace system', instr:'PM makes final decision based on Dawn test results. Document decision with rationale.' }
+      ]},
+      { id:'sec_s9', num:'09', title:'Front Desk Monitoring (Post Street)', tasks:[
+        { t:'Set up front desk workstation', instr:'Desk must have clear sightline to building entrance. Ensure adequate lighting.' },
+        { t:'Install monitor with live camera feeds', instr:'Configure monitor to display all exterior camera feeds. Set up split-screen or rotation view.' },
+        { t:'Provide logbook + visitor tracking sheets', instr:'Place physical logbook at desk. Pre-print visitor tracking sheets for first 2 weeks.' },
+        { t:'Install signage (ID required / check-in required)', instr:'Post signage at building entrance and front desk. Must be visible before entry.' },
+        { t:'Assign Michael to front desk monitoring', instr:'Confirm Michael\'s schedule and duties in writing. Brief him on visitor log procedures.' }
+      ]},
+      { id:'sec_s10', num:'10', title:'Visitor Tracking System', tasks:[
+        { t:'Implement visitor log system', instr:'Deploy physical or digital log at front desk. All visitors must be logged without exception.' },
+        { t:'Require ID during business hours', instr:'Define business hours policy. Staff must request and verify ID before granting access.' },
+        { t:'Track: visitor name, tenant visited, time in/out', instr:'All three fields are required on every log entry. Incomplete entries must be flagged.' },
+        { t:'Run system for 1 week', instr:'Operate without modification for full 7 days. Collect baseline data.' },
+        { t:'Review logs and identify patterns/issues', instr:'PM reviews logs at end of week 1. Identify peak times, recurring visitors, and gaps.' }
+      ]},
+      { id:'sec_s11', num:'11', title:'Physical Security Upgrades – Bids (Post)', tasks:[
+        { t:'Obtain bids for window bars and side fence (Post)', instr:'Request minimum 2 bids each. Specify dimensions and materials required.' },
+        { t:'Review and approve vendors', instr:'PM reviews bids with owner. Written approval required before any work is authorized.' },
+        { t:'Schedule installation', instr:'Coordinate with vendor and residents for minimum disruption. Notify tenants 48hrs in advance.' }
+      ]},
+      { id:'sec_s12', num:'12', title:'Policy & Enforcement', tasks:[
+        { t:'Implement no propped door policy', instr:'Distribute written policy to all tenants. Include in lease addendum. Define consequences.' },
+        { t:'Implement guest check-in requirement', instr:'All guests must be checked in at front desk or via Swiftlane. No exceptions during business hours.' },
+        { t:'Implement ID verification (business hours)', instr:'Staff must verify ID for all non-residents during defined business hours.' },
+        { t:'Define violation consequences', instr:'Draft violation schedule: warning → written notice → fine. Legal review required before issuing.' }
+      ]},
+      { id:'sec_s13', num:'13', title:'Testing & Validation', tasks:[
+        { t:'Test all doors after repairs', instr:'Re-run full stress test on every repaired door. Must pass all four tests to be cleared.' },
+        { t:'Test camera motion alerts', instr:'Trigger motion on each camera. Confirm alert received within 2 minutes.' },
+        { t:'Test Swiftlane alerts + logging', instr:'Simulate access event. Confirm event is logged and alert fires to all recipients.' },
+        { t:'Perform simulated unauthorized entry test', instr:'Conduct unannounced entry attempt. Document response time and system performance.' }
+      ]},
+      { id:'sec_s14', num:'14', title:'Ongoing Security Management', tasks:[
+        { t:'[WEEKLY] Check all exterior doors', instr:'Every week: walk all exterior doors. Check self-close, self-latch, and lock function.' },
+        { t:'[WEEKLY] Verify cameras are functioning', instr:'Every week: confirm all cameras show live feed and motion detection is active.' },
+        { t:'[WEEKLY] Spot check visitor logs', instr:'Every week: review visitor log for completeness and any unusual patterns.' },
+        { t:'[MONTHLY] Full door stress test', instr:'Every month: repeat full push/pull/shake/bypass test on all exterior doors.' },
+        { t:'[MONTHLY] Review incidents + footage', instr:'Every month: pull incident log and review relevant footage. Document findings in AppFolio.' },
+        { t:'[MONTHLY] Adjust systems and enforcement', instr:'Every month: update policies, camera settings, or access rules based on monthly review.' }
+      ]}
+    ]
+  },
+  'Wi-Fi System': {
+    icon: '📶',
+    sections: [
+      { id:'wifi_s1', num:'01', title:'Define Service Standards', tasks:[
+        { t:'Research generally accepted Wi-Fi standards (SRO / multi-tenant)', instr:'Research industry benchmarks for SRO and multi-tenant buildings. Document findings.' },
+        { t:'Define baseline speeds for office network', instr:'Set minimum download/upload speeds for office operations. Document in writing.' },
+        { t:'Define baseline speeds for common areas', instr:'Define acceptable speeds for hallways and common area coverage zones.' },
+        { t:'Define minimum guaranteed speeds for tenant network', instr:'Set floor speeds for tenant-facing network. These become your service commitment.' },
+        { t:'Document service level expectations', instr:'Create one-page SLA document covering speeds, uptime, and support response.' },
+        { t:'Prepare standards for internal review', instr:'Present draft standards to PM and ownership for sign-off before engaging vendors.' }
+      ]},
+      { id:'wifi_s2', num:'02', title:'Map Network Needs', tasks:[
+        { t:'Identify all office internet requirements (computers, phones, systems)', instr:'List every device and system in the office that requires internet connectivity.' },
+        { t:'Identify all tenant coverage areas (hallways, common areas)', instr:'Walk the building. Mark all areas where tenant Wi-Fi access is expected.' },
+        { t:'Identify all security camera internet needs', instr:'List every camera by location and confirm bandwidth requirements per camera.' },
+        { t:'Identify all door/access control system internet needs', instr:'Confirm Swiftlane and any other access control systems that require internet.' },
+        { t:'Identify any additional smart/building systems requiring internet', instr:'Check HVAC controls, intercoms, smart locks, and any IoT devices.' },
+        { t:'Create coverage map of all service zones', instr:'Draw or annotate floor plan showing each zone and its requirements.' },
+        { t:'Confirm project manager can clearly verbalize zones and plan', instr:'PM must be able to explain the full network plan without referring to notes.' }
+      ]},
+      { id:'wifi_s3', num:'03', title:'Engage Internet Provider (Monkeybrains)', tasks:[
+        { t:'Present desired speeds and coverage requirements', instr:'Share the service standards document and coverage map with Monkeybrains.' },
+        { t:'Request infrastructure plan to meet defined targets', instr:'Ask Monkeybrains to provide a written plan for meeting your stated requirements.' },
+        { t:'Obtain pricing and service options', instr:'Request itemized pricing for all service tiers and equipment options.' },
+        { t:'Clarify limitations and realistic performance expectations', instr:'Ask specifically about peak-time performance, latency, and known building limitations.' }
+      ]},
+      { id:'wifi_s4', num:'04', title:'Evaluate Technical Approach', tasks:[
+        { t:'Determine required equipment (routers, access points, wiring)', instr:'Create equipment list with model numbers and quantities needed per zone.' },
+        { t:'Define secure office SSID structure', instr:'Office network must be password-protected and separate from all other networks.' },
+        { t:'Define network for security cameras and door systems', instr:'Security devices must be on a dedicated, isolated VLAN.' },
+        { t:'Define tenant SSID structure', instr:'Tenant network must be separate from office and security networks.' },
+        { t:'Define network segmentation (separate networks)', instr:'Confirm VLANs or physical separation for each zone. Document the architecture.' },
+        { t:'Define password and access control requirements', instr:'Set password rotation policy and access control procedures for each network.' },
+        { t:'Confirm ability to meet minimum speed requirements', instr:'Run calculations based on equipment specs and number of users per zone.' }
+      ]},
+      { id:'wifi_s5', num:'05', title:'Build Implementation Plan', tasks:[
+        { t:'Define full system architecture (SSID structure, zones, placement)', instr:'Create complete network diagram showing all SSIDs, zones, and hardware placement.' },
+        { t:'Define hardware placement plan', instr:'Specify exact mounting location for each router and access point.' },
+        { t:'Create installation schedule (phasing, downtime, logistics)', instr:'Phase installation to minimize disruption. Notify tenants of any planned downtime.' },
+        { t:'Define vendor vs internal responsibilities', instr:'Clearly document which tasks are handled by Monkeybrains vs internal staff.' },
+        { t:'Prepare full plan for approval', instr:'Compile all documents into a single approval package for PM and ownership review.' }
+      ]},
+      { id:'wifi_s6', num:'06', title:'Management Review & Approval', tasks:[
+        { t:'Present plan (cost, performance, scope)', instr:'Schedule review meeting. Present plan with cost summary and performance commitments.' },
+        { t:'Incorporate feedback and revisions', instr:'Document all feedback. Revise plan and resubmit for final approval.' }
+      ]},
+      { id:'wifi_s7', num:'07', title:'Implementation', tasks:[
+        { t:'Procure all equipment and services', instr:'Place orders. Confirm delivery timeline aligns with installation schedule.' },
+        { t:'Install routers, access points, and wiring', instr:'Installation per approved plan. PM or RM must be present during install.' },
+        { t:'Configure office secure SSID', instr:'Set SSID name, password, and security protocol. Test connectivity from all office devices.' },
+        { t:'Configure tenant shared SSID', instr:'Set SSID name and password. Test from multiple tenant areas.' },
+        { t:'Configure security system network (cameras, doors)', instr:'Assign all security devices to dedicated VLAN. Confirm isolation from other networks.' },
+        { t:'Set passwords and access controls', instr:'Change all default passwords. Document credentials in secure location.' },
+        { t:'Confirm network segmentation is functioning', instr:'Test that devices on one network cannot access devices on another.' }
+      ]},
+      { id:'wifi_s8', num:'08', title:'Testing & Validation', tasks:[
+        { t:'Test speeds in all coverage areas', instr:'Run speed tests in every defined zone. Document results vs targets.' },
+        { t:'Verify separation of networks (security validation)', instr:'Attempt cross-network access from each zone. All attempts must fail.' },
+        { t:'Test reliability under active use', instr:'Run simultaneous connections across all networks for minimum 30 minutes.' },
+        { t:'Identify and resolve weak coverage areas', instr:'Add access points or adjust placement to eliminate dead zones.' },
+        { t:'Adjust system configuration as needed', instr:'Make all configuration changes and retest affected areas.' }
+      ]},
+      { id:'wifi_s9', num:'09', title:'Documentation & Training', tasks:[
+        { t:'Document all SSIDs and access credentials', instr:'Store securely in AppFolio and one additional secure backup location.' },
+        { t:'Document expected speeds and limitations', instr:'Create a one-page reference sheet for staff with expected speeds per zone.' },
+        { t:'Document troubleshooting procedures', instr:'Write step-by-step guide for common issues: no connectivity, slow speeds, device offline.' },
+        { t:'Train staff to explain network setup', instr:'Each staff member must be able to explain the network zones and their purpose.' },
+        { t:'Train staff to provide access and escalate issues', instr:'Staff must know how to share credentials and who to contact for escalation.' }
+      ]},
+      { id:'wifi_s10', num:'10', title:'Final Validation', tasks:[
+        { t:'Office network secure and operational', instr:'Confirm all office devices connected. Confirm no unauthorized access possible.' },
+        { t:'Tenant network operational and password protected', instr:'Test from tenant-area device. Confirm password required and speeds meet targets.' },
+        { t:'Security systems operating 24/7 without interruption', instr:'Confirm cameras and door systems have been online for minimum 48hrs without drops.' },
+        { t:'Full building coverage confirmed', instr:'Walk entire building with mobile device. No dead zones allowed.' },
+        { t:'Staff can clearly explain system and expectations', instr:'Verbal quiz with all staff. All must pass without referring to notes.' },
+        { t:'System meets cost and performance expectations', instr:'Compare actual costs and speeds to approved plan. Document any variances.' }
+      ]}
+    ]
+  },
+  'Inventory Management': {
+    icon: '📦',
+    sections: [
+      { id:'inv_s1', num:'01', title:'Define Supply Needs', tasks:[
+        { t:'Interview front office staff', instr:'Ask staff what supplies they run out of most often and what is missing from current inventory.' },
+        { t:'Interview cleaning team', instr:'Confirm all cleaning products, equipment, and consumables needed.' },
+        { t:'Interview maintenance team', instr:'Confirm all maintenance supplies, tools, and spare parts required.' },
+        { t:'Interview property manager', instr:'Confirm any PM-specific supplies or administrative items needed.' },
+        { t:'Perform physical walkthrough of supplies', instr:'Walk all storage areas. Note current stock levels and condition.' },
+        { t:'Compile full supply list', instr:'Combine all interview inputs into one master supply list. Group by category.' }
+      ]},
+      { id:'inv_s2', num:'02', title:'Vendor Selection', tasks:[
+        { t:'Identify potential vendors (Amazon, Uline, etc.)', instr:'List at least 3 vendors for comparison. Include local options if applicable.' },
+        { t:'Select sample items for price comparison', instr:'Choose 10 representative items across categories for price comparison.' },
+        { t:'Compare total cost (including shipping)', instr:'Calculate all-in cost per item including shipping, minimums, and delivery times.' },
+        { t:'Select most cost-effective vendor', instr:'Document selection rationale. Include backup vendor for items with limited sourcing.' }
+      ]},
+      { id:'inv_s3', num:'03', title:'Account Setup', tasks:[
+        { t:'Set up vendor account', instr:'Create business account with selected vendor. Use company email and billing information.' },
+        { t:'Define ordering permissions', instr:'Specify who has authority to place orders and any dollar limits per order.' },
+        { t:'Submit paperwork for approval', instr:'Complete any required vendor forms or credit applications.' },
+        { t:'Obtain Lone Oak approval', instr:'Get written approval from Lone Oak before placing any initial orders.' },
+        { t:'File documentation and notify Danielle', instr:'Store all vendor account documents in AppFolio. Send confirmation email to Danielle.' }
+      ]},
+      { id:'inv_s4', num:'04', title:'Inventory System Setup', tasks:[
+        { t:'Create full inventory list', instr:'Complete list with item name, unit, current quantity, and minimum threshold.' },
+        { t:'Define minimum thresholds for each item', instr:'Set the quantity below which a reorder is triggered. Document reasoning per item.' },
+        { t:'Create inventory checklist', instr:'Build physical or digital checklist for staff to use during inventory checks.' },
+        { t:'Define reorder triggers', instr:'Document who is notified when threshold is hit and how quickly orders must be placed.' }
+      ]},
+      { id:'inv_s5', num:'05', title:'Operations Process', tasks:[
+        { t:'Define inventory check frequency', instr:'Set schedule: weekly, biweekly, or monthly based on consumption rate.' },
+        { t:'Create step-by-step procedure', instr:'Write procedure document covering: check → log → compare threshold → reorder if needed.' },
+        { t:'Assign responsibility to front office staff', instr:'Name specific staff member(s) responsible. Include in job description.' },
+        { t:'Integrate cleaning of supply room into process', instr:'Supply room must be cleaned and organized as part of each inventory check.' }
+      ]},
+      { id:'inv_s6', num:'06', title:'Supply Room Organization', tasks:[
+        { t:'Clean supply room', instr:'Remove all items. Clean all surfaces. Dispose of expired or damaged items.' },
+        { t:'Organize and label storage', instr:'Group items by category. Label every shelf and bin clearly.' },
+        { t:'Ensure room meets cleanliness standard', instr:'Take photos for documentation. Room must be maintained at this standard.' }
+      ]},
+      { id:'inv_s7', num:'07', title:'Training & Accountability', tasks:[
+        { t:'Train staff on inventory process', instr:'Walk staff through the full procedure. Answer all questions before go-live.' },
+        { t:'Require staff to demonstrate understanding', instr:'Staff must perform one complete inventory check independently.' },
+        { t:'Implement sign-off system', instr:'Staff signs off on each completed inventory check. Logs stored in AppFolio.' },
+        { t:'Require staff to track and explain orders', instr:'Every order placed must be documented with reason, items, and cost.' }
+      ]},
+      { id:'inv_s8', num:'08', title:'Final Validation', tasks:[
+        { t:'Supply room clean and organized', instr:'Final PM inspection. Sign-off required. Photos stored in AppFolio.' },
+        { t:'Inventory regularly checked and signed', instr:'Review last 2 inventory sign-off logs before validation.' },
+        { t:'No stockouts', instr:'Confirm no items have hit zero stock since system was implemented.' },
+        { t:'Staff can explain process and orders', instr:'Verbal quiz with responsible staff. Must explain process and last 3 orders.' }
+      ]}
+    ]
+  },
+  'Budget Management': {
+    icon: '💰',
+    sections: [
+      { id:'bud_s1', num:'01', title:'Initial Budget Creation', tasks:[
+        { t:'Pull historical income from AppFolio', instr:'Export 12 months of income data by GL code from AppFolio.' },
+        { t:'Pull historical expenses by GL code', instr:'Export 12 months of expense data. Organize by GL code.' },
+        { t:'Compile all GL codes', instr:'Create master GL code list. Confirm all codes are active and correctly labeled.' },
+        { t:'Input data into AppFolio budget', instr:'Enter all historical data into the AppFolio budget module.' },
+        { t:'Verify completeness', instr:'Cross-check AppFolio totals against source data. All figures must reconcile.' },
+        { t:'Remove capital expenditures', instr:'Identify and exclude all capital items from the operating budget.' }
+      ]},
+      { id:'bud_s2', num:'02', title:'Internal Review', tasks:[
+        { t:'Schedule review meeting', instr:'Book 90-minute review with PM and Danielle within 1 week of budget completion.' },
+        { t:'Conduct line-by-line budget review', instr:'Review every GL code. Flag any line that does not align with current operations.' },
+        { t:'Identify GL code consolidation opportunities', instr:'Identify codes that can be merged for simpler tracking.' },
+        { t:'Evaluate accuracy of historical spend', instr:'Compare historical spend to known contracts and recurring costs. Note anomalies.' },
+        { t:'Document adjustments', instr:'Log every change made during review with reason and amount.' }
+      ]},
+      { id:'bud_s3', num:'03', title:'Revision & Alignment', tasks:[
+        { t:'Update budget based on feedback', instr:'Incorporate all changes from internal review. Rerun totals.' },
+        { t:'Consolidate GL codes', instr:'Merge approved GL codes. Update AppFolio to reflect new structure.' },
+        { t:'Coordinate with Danielle', instr:'Confirm all accounting-level changes with Danielle before finalizing.' },
+        { t:'Rebuild budget structure', instr:'Reconstruct budget in AppFolio with finalized GL structure and amounts.' }
+      ]},
+      { id:'bud_s4', num:'04', title:'Ownership Working Session', tasks:[
+        { t:'Prepare presentation', instr:'Build one-page summary plus GL-level detail. Include YOY comparisons if available.' },
+        { t:'Present to Justina and Lone Oak', instr:'Schedule 60-minute working session. Walk through every major line.' },
+        { t:'Capture feedback', instr:'Document all ownership comments, questions, and requested changes in real time.' }
+      ]},
+      { id:'bud_s5', num:'05', title:'Finalization', tasks:[
+        { t:'Incorporate ownership feedback', instr:'Make all changes requested by ownership. Document each change with rationale.' },
+        { t:'Finalize projections', instr:'Run final projections for all variable cost lines.' },
+        { t:'Lock GL structure', instr:'Confirm final GL structure with Danielle. No further changes without PM approval.' }
+      ]},
+      { id:'bud_s6', num:'06', title:'Authorization Policy', tasks:[
+        { t:'Define spending authority thresholds', instr:'Set dollar limits for each role: staff, PM, director, ownership.' },
+        { t:'Define approval process for overages', instr:'Document what happens when spending exceeds budget. Who approves? What is timeline?' },
+        { t:'Align with ownership expectations', instr:'Confirm thresholds and process are acceptable to Lone Oak and Justina.' },
+        { t:'Communicate policy', instr:'Distribute written policy to all staff with spending authority.' }
+      ]},
+      { id:'bud_s7', num:'07', title:'Implementation', tasks:[
+        { t:'Train property manager', instr:'PM must be able to use AppFolio budget module and interpret variances.' },
+        { t:'Establish monthly review process', instr:'Set recurring monthly meeting to review actuals vs budget.' },
+        { t:'Define variance thresholds', instr:'Define what % variance triggers escalation to ownership.' },
+        { t:'Implement reporting cadence', instr:'Configure AppFolio to generate monthly budget vs actual report automatically.' }
+      ]},
+      { id:'bud_s8', num:'08', title:'Final Validation', tasks:[
+        { t:'Budget fully built in AppFolio', instr:'All GL codes active. All amounts entered. No blank lines.' },
+        { t:'PM can determine spending vs approval', instr:'PM demonstrates ability to look up budget, compare to actual, and determine if approval needed.' },
+        { t:'Monthly reviews occurring', instr:'Confirm first monthly review has been completed and documented.' },
+        { t:'Budget used for decision-making', instr:'PM provides example of a decision made using budget data.' }
+      ]}
+    ]
+  },
+  'Postings & Compliance': {
+    icon: '📋',
+    sections: [
+      { id:'comp_s1', num:'01', title:'Gather Final Rule Documents', tasks:[
+        { t:'Collect final approved House Rules (SRO Rules)', instr:'Confirm this is the legally reviewed final version. Store as "House Rules – Final" PDF.' },
+        { t:'Collect final approved Lease Addendum', instr:'Confirm this is the legally reviewed final version. Store as "Lease Addendum – Final" PDF.' },
+        { t:'Collect Visitor Policy (if separate)', instr:'Confirm if visitor policy is standalone or embedded in house rules. Finalize accordingly.' },
+        { t:'Create single folder with all final labeled PDFs', instr:'Folder must contain: "House Rules – Final" and "Lease Addendum – Final". Store in AppFolio.' }
+      ]},
+      { id:'comp_s2', num:'02', title:'Bulletin Board Setup', tasks:[
+        { t:'Locate all bulletin boards (office + all properties)', instr:'Walk every property. List every existing board by location.' },
+        { t:'Deliver all boards to each property', instr:'Confirm boards are physically at each location before scheduling installation.' },
+        { t:'Identify exact install locations: lobby, each floor, required areas', instr:'Mark exact wall locations with tape or notes. Photograph each location.' },
+        { t:'Mark locations physically for maintenance', instr:'Use tape and printed notes so maintenance knows exactly where to mount.' },
+        { t:'Coordinate installation with maintenance', instr:'Schedule install. PM or RM must be present to confirm placement.' },
+        { t:'Confirm all bulletin boards installed and mounted', instr:'Photograph each installed board. Store photos in AppFolio compliance folder.' }
+      ]},
+      { id:'comp_s3', num:'03', title:'Bulletin Board Key Control', tasks:[
+        { t:'Collect all bulletin board keys', instr:'Gather every key from all staff. Confirm no keys are unaccounted for.' },
+        { t:'Create 1 operational key set', instr:'Label each key with property and location (e.g., "Broadway Floor 2 Board").' },
+        { t:'Create 1 backup key set', instr:'Label identically to operational set. Store in secure separate location.' },
+        { t:'Create key log and store in AppFolio', instr:'Log must show: key label, who holds it, date issued. Update whenever keys change hands.' }
+      ]},
+      { id:'comp_s4', num:'04', title:'Post Rules on Bulletin Boards', tasks:[
+        { t:'Create Rules Posting Package — cover flyer + full House Rules', instr:'Cover flyer must include: "New Building Rules & Standards" header, effective date, statement rules apply to all residents, and footer: "Please review carefully. These rules will be enforced."' },
+        { t:'Print Rules Posting Package for every board location', instr:'Print one complete package per bulletin board. Use clear readable font — minimum 12pt.' },
+        { t:'Post package on ALL bulletin boards', instr:'Post cover flyer at top, rules document below. Photograph each completed board.' },
+        { t:'Confirm posting photos stored in compliance folder', instr:'One photo per board. Label each photo with property and location.' }
+      ]},
+      { id:'comp_s5', num:'05', title:'Tenant Notification — Email', tasks:[
+        { t:'Draft tenant email announcing new rules', instr:'Must include: announcement, effective date (30-day notice), purpose explanation, House Rules attached.' },
+        { t:'Get approval from owner/management before sending', instr:'Email must be reviewed and approved before distribution. No exceptions.' },
+        { t:'Coordinate with Fernanda to send via AppFolio', instr:'Send through AppFolio messaging to ensure all tenants are reached and delivery is logged.' },
+        { t:'Confirm email sent to ALL tenants', instr:'Pull sent report from AppFolio. Confirm every active tenant received the email.' },
+        { t:'Export and store list of email recipients', instr:'Save recipient list as PDF in compliance folder dated with send date.' }
+      ]},
+      { id:'comp_s6', num:'06', title:'Door Posting + Proof of Service', tasks:[
+        { t:'Print cover letter + House Rules for EACH unit', instr:'One complete set per unit. Use unit number on cover letter. Do not reuse copies.' },
+        { t:'Post notice on every tenant door', instr:'Place on door where clearly visible. Do not slide under door — must be visible without opening.' },
+        { t:'Photograph notice on each unit door', instr:'One photo per unit showing notice clearly posted. Label photo with unit number.' },
+        { t:'Complete proof of service log unit-by-unit', instr:'Log must show: unit number, date posted, posted by (staff name). Sign each entry.' },
+        { t:'Create folder with all door photos and service log', instr:'Organize photos by unit number. Store service log and photos in AppFolio.' }
+      ]},
+      { id:'comp_s7', num:'07', title:'Timeline Control', tasks:[
+        { t:'Define official Day 0 — the posting date', instr:'Day 0 is the date notices are posted on doors. Document this date in writing.' },
+        { t:'Track enforcement date (Day 30 from posting)', instr:'Calculate Day 30. Add to property calendar. No enforcement actions before Day 30.' }
+      ]},
+      { id:'comp_s8', num:'08', title:'Lease System Update', tasks:[
+        { t:'Confirm new leases include House Rules', instr:'Review lease template in AppFolio. House Rules must be attached to every new lease.' },
+        { t:'Confirm new leases include Addendum', instr:'Addendum must be included as a signed attachment in every new lease going forward.' },
+        { t:'Coordinate with Transaction Coordinator', instr:'Confirm TC is using updated lease package. Schedule brief to walk through new documents.' },
+        { t:'Collect 3 sample leases showing new documents included', instr:'Pull 3 recent leases from AppFolio. Confirm all required documents are present.' }
+      ]},
+      { id:'comp_s9', num:'09', title:'Furniture Inventory System', tasks:[
+        { t:'Review current furniture inventory workflow', instr:'Answer: When is furniture assigned? Who records it? Where is it stored?' },
+        { t:'Decide: keep current system OR rebuild', instr:'Document the decision with rationale. Get PM approval before rebuilding.' },
+        { t:'Define when inventory is created in workflow', instr:'Inventory must be created at move-in. Document the exact trigger point.' },
+        { t:'Define who inputs furniture inventory', instr:'Assign a specific role. Only that person or their backup may input inventory.' },
+        { t:'Define where inventory is stored in AppFolio', instr:'Create standard AppFolio location for all furniture inventory records.' }
+      ]},
+      { id:'comp_s10', num:'10', title:'Unit Standards', tasks:[
+        { t:'Verify mattress pest covers installed in all units', instr:'Walk every unit. Check mattress covers on all beds. Document any missing units.' },
+        { t:'Verify blinds installed in all units', instr:'Confirm blinds present and functional in every room. Document any missing or broken.' },
+        { t:'Complete unit standards checklist for each unit', instr:'One checklist per unit. Sign off per unit. Store in AppFolio under that unit.' }
+      ]},
+      { id:'comp_s11', num:'11', title:'Fire Compliance Document', tasks:[
+        { t:'Create standard fire compliance lease attachment', instr:'Must include: fire exits, fire extinguisher locations, pull station locations.' },
+        { t:'Save fire compliance template in leasing system', instr:'Store in AppFolio leasing template folder. Label: "Fire Compliance Attachment – Standard".' }
+      ]},
+      { id:'comp_s12', num:'12', title:'No Smoking Signage', tasks:[
+        { t:'Redesign no smoking sign with ReLISTO branding', instr:'Must include: "No smoking within 15 feet", clear language, clean design matching brand standards.' },
+        { t:'Identify all no smoking sign placement locations', instr:'Walk all properties. List every required location: entrances, common areas, near units.' },
+        { t:'Install no smoking signs at all locations', instr:'Install at eye level. Use weatherproof signs for exterior. Photograph each installed sign.' },
+        { t:'Store installation photos in compliance folder', instr:'Label each photo with property and location. Date-stamp all photos.' }
+      ]},
+      { id:'comp_s13', num:'13', title:'SRO Required Signage', tasks:[
+        { t:'Research all required SRO + city postings', instr:'Must include: 311 signage, tenant rights postings, any SF DBI or DPH required notices.' },
+        { t:'Print all required SRO signage', instr:'Use official versions where required. Do not modify legally mandated text.' },
+        { t:'Install all SRO required signage', instr:'Install per regulatory requirements. Photograph each sign at its posted location.' },
+        { t:'Complete SRO signage compliance checklist', instr:'Check off every required posting. Store checklist and photos in compliance binder.' }
+      ]},
+      { id:'comp_s14', num:'14', title:'Fire & Safety Signage', tasks:[
+        { t:'Identify all required fire signage: evacuation routes, fire system notices, sprinkler compliance', instr:'Review SF Fire Code requirements for SRO buildings. List every required sign.' },
+        { t:'Install all fire and safety signage', instr:'Coordinate with fire safety vendor if needed. Photograph every installed sign.' },
+        { t:'Document all fire signage installation', instr:'Store photos and compliance log in AppFolio fire safety folder.' }
+      ]},
+      { id:'comp_s15', num:'15', title:'Management Identification Board', tasks:[
+        { t:'Create staff identification board with photos, names, roles, contact info', instr:'Include all staff who interact with tenants. Use professional headshots or clear photos.' },
+        { t:'Install management identification board in lobby', instr:'Mount at eye level in main lobby. Ensure it is well-lit and clearly visible.' },
+        { t:'Photograph completed board installation', instr:'Store photo in AppFolio. Update board within 5 business days of any staff change.' }
+      ]},
+      { id:'comp_s16', num:'16', title:'Office + Contact Signage', tasks:[
+        { t:'Create office hours signage', instr:'Include all days and hours. Use consistent format across all properties.' },
+        { t:'Create resident manager contact signage', instr:'Include name, phone number, and hours of availability.' },
+        { t:'Create emergency number signage', instr:'Emergency number must be visible 24/7. Post at every entry point.' },
+        { t:'Install all office and contact signage', instr:'Install at all required locations. Photograph each sign.' }
+      ]},
+      { id:'comp_s17', num:'17', title:'Staff Training — Enforcement', tasks:[
+        { t:'Train front desk staff on violation reporting', instr:'Training must cover: identifying violations, how to report (NOT enforce), examples: trash, damage, smoking, pest conditions.' },
+        { t:'Train maintenance staff on violation reporting', instr:'Same content as front desk. Maintenance must know they report — not confront.' },
+        { t:'Train housekeeping staff on violation reporting', instr:'Focus on what to look for during cleaning. Report immediately — do not ignore.' },
+        { t:'Confirm each staff member can demonstrate reporting process', instr:'Each person must walk through a mock report. PM signs off per staff member.' }
+      ]},
+      { id:'comp_s18', num:'18', title:'Violation Reporting System', tasks:[
+        { t:'Create violation reporting form (what, where, who, photo)', instr:'Reporting form must capture: what happened, where, who if known, photo of violation.' },
+        { t:'Test system with 3 submitted test reports', instr:'Have staff submit 3 mock reports. Review for completeness. Adjust form if needed.' }
+      ]},
+      { id:'comp_s19', num:'19', title:'Enforcement Workflow', tasks:[
+        { t:'Define Step 1: Verbal warning process', instr:'Document who delivers verbal warning, what is said, and how it is logged.' },
+        { t:'Define Step 2: General notice to building process', instr:'Document notice template, who approves it, and how it is distributed.' },
+        { t:'Define Step 3: Escalation to management/legal', instr:'Document trigger for escalation, who is notified, and timeline requirements.' },
+        { t:'Create written enforcement SOP', instr:'One document covering all 3 steps. Store in AppFolio. All staff must receive a copy.' }
+      ]},
+      { id:'comp_s20', num:'20', title:'Weekly Inspection System', tasks:[
+        { t:'Create weekly inspection checklist: doors, trash, damage, cleanliness', instr:'Checklist must cover all common areas. One checklist per property per week.' },
+        { t:'Assign weekly inspection responsibility', instr:'Name specific person(s) responsible for each property. Include in job description.' },
+        { t:'Complete first inspection report', instr:'First report must be completed within 1 week of system launch. Store in AppFolio.' }
+      ]},
+      { id:'comp_s21', num:'21', title:'Compliance Binder', tasks:[
+        { t:'Create digital compliance folder in AppFolio', instr:'Folder must contain: rules, proof of postings, compliance logs, templates.' },
+        { t:'Create physical compliance binder', instr:'Physical binder mirrors digital folder. Store at office. Label clearly on spine.' },
+        { t:'Confirm binder includes all required contents', instr:'Review against required list: rules, proof of postings, compliance logs, templates. Nothing missing before sign-off.' }
+      ]},
+      { id:'comp_s22', num:'22', title:'Ongoing Posting System', tasks:[
+        { t:'Assign responsibility for checking bulletin boards weekly', instr:'Named staff member checks every board every week. Logged in weekly inspection report.' },
+        { t:'Assign responsibility for replacing missing or damaged postings within 24 hours', instr:'Missing items must be replaced within 24 hours of discovery. No exceptions.' },
+        { t:'Create weekly board checklist', instr:'One checklist per board per week. Stored in AppFolio compliance folder.' }
+      ]}
+    ]
+  },
+  'Beautification': {
+    icon: '✨',
+    sections: [
+      { id:'beau_s1', num:'01', title:'Global Priorities — All Buildings', tasks:[
+        { t:'Deep clean lobby and entry areas (no odor, no debris, no clutter)', instr:'Assign cleaning crew for full deep clean. Inspect and sign off: no odor, no debris, no clutter before marking complete.' },
+        { t:'Remove all graffiti (interior and exterior)', instr:'Walk all interior and exterior surfaces. Photograph all graffiti before removal. Use appropriate graffiti remover per surface type.' },
+        { t:'Remove all random, outdated, or non-compliant signage', instr:'Walk every common area. Pull down any sign that is unofficial, outdated, or not part of the approved signage system.' },
+        { t:'Standardize and streamline all required signage', instr:'Replace removed signage with standardized ReLISTO-branded versions. All signs must match format and font.' },
+        { t:'Evaluate and improve lighting (brightness, warmth, consistency)', instr:'Walk all common areas at night. Note any dim, flickering, or inconsistent fixtures. Create improvement list.' },
+        { t:'Identify and correct all visible safety issues (doors, flooring, access points)', instr:'Flag every safety issue during walkthrough. Each issue needs a work order before this task can be closed.' }
+      ]},
+      { id:'beau_s2', num:'02', title:'Post Street — Lobby Clean-Up & Layout', tasks:[
+        { t:'Remove all random signage, frames, and clutter from lobby', instr:'Clear everything that is not an approved, required posting. Lobby must feel open and intentional.' },
+        { t:'Remove unused TV', instr:'Disconnect, remove, and dispose of or store TV. Patch and paint wall if needed after removal.' },
+        { t:'Remove wood boarding in lobby', instr:'Remove wood boarding. Inspect wall behind it. Repair and paint as needed.' },
+        { t:'Replace large table with smaller table and seating area', instr:'Source appropriate smaller table and seating. Get PM approval on style before purchasing.' },
+        { t:'Add plants (artificial or real) to create greener environment', instr:'Select plants appropriate for lighting conditions. Artificial plants must be high quality — no cheap plastic. Get approval before purchasing.' },
+        { t:'Evaluate and add artwork if needed (post-cleanup only)', instr:'Only evaluate artwork after all clutter and signage is removed. Do not add anything until lobby is fully cleaned up.' }
+      ]},
+      { id:'beau_s3', num:'03', title:'Post Street — Cleanliness & Maintenance', tasks:[
+        { t:'Ensure lobby and common areas are consistently clean and odor-free', instr:'Add to daily cleaning checklist. Inspect at start and end of each business day.' },
+        { t:'Ensure mailroom is clean and mail is not left on floors', instr:'Establish mailroom standard: no mail on floor, surfaces wiped, bins organized. Check daily.' },
+        { t:'Review flooring condition and identify improvements', instr:'Photograph current flooring. Note stains, damage, or wear. Get 2 quotes for repair or replacement.' }
+      ]},
+      { id:'beau_s4', num:'04', title:'Post Street — Security & Function', tasks:[
+        { t:'Secure and ensure functionality of second door', instr:'Test self-close, self-latch, and lock. Repair or replace any components that fail. Document completion.' }
+      ]},
+      { id:'beau_s5', num:'05', title:'Post Street — Kitchen Review', tasks:[
+        { t:'Inspect kitchen condition and cleanliness', instr:'Full inspection: appliances, surfaces, storage, odor. Photograph current condition.' },
+        { t:'Propose improvements for usability and appearance', instr:'Create written list of proposed improvements with estimated costs. Submit to PM for approval.' }
+      ]},
+      { id:'beau_s6', num:'06', title:'Broadway — Exterior & Entry', tasks:[
+        { t:'Remove graffiti from exterior and signage', instr:'Photograph all graffiti before removal. Use appropriate remover per surface. Document after photos.' },
+        { t:'Remove all "hotel" references — rebrand as 402 Broadway', instr:'Locate every instance of "hotel" language on signage, awning, doors, and windows. Remove or cover all references.' },
+        { t:'Paint or replace awning', instr:'Get 2 bids for awning painting or replacement. Present to PM with recommendation. Schedule after approval.' },
+        { t:'Paint front gate (black, remove rust)', instr:'Wire brush rust, apply rust converter, prime, then paint black. Inspect for full coverage before sign-off.' },
+        { t:'Review and improve front entry layout and flow', instr:'Walk the entry as a first-time visitor. Note any confusion, clutter, or obstructions. Propose layout improvements.' },
+        { t:'Ensure second door is functional and presentable', instr:'Test all door functions. Clean and touch up paint. Must look intentional and be fully operational.' }
+      ]},
+      { id:'beau_s7', num:'07', title:'Broadway — Lobby & Interior Experience', tasks:[
+        { t:'Approve color scheme for building interior', instr:'Present 2-3 color options to PM and ownership. Get written approval before any painting begins.' },
+        { t:'Begin phased painting plan (weekly execution)', instr:'Create weekly painting schedule. One area per week minimum. Track progress with before/after photos.' },
+        { t:'Remove metal bars and replace with internal security solution', instr:'Get 2 bids for bar removal and alternative security. Present to PM. Confirm fire code compliance before removal.' },
+        { t:'Clean and standardize all signage', instr:'Replace all non-standard signs with approved ReLISTO format. No handwritten or printed paper signs in common areas.' }
+      ]},
+      { id:'beau_s8', num:'08', title:'Broadway — Atmosphere & Common Areas', tasks:[
+        { t:'Add plants to light well (create green/jungle feel)', instr:'Select plants suited to light well conditions. Get PM approval on plant selection and quantity before purchasing.' },
+        { t:'Paint and repair walls in light well', instr:'Repair any cracks or damage first. Paint after repairs are complete. Photograph finished result.' },
+        { t:'Replace or reposition mirror with more purposeful design', instr:'Evaluate current mirror placement. Propose replacement or repositioning with rationale. Get PM approval.' },
+        { t:'Add seating in common areas', instr:'Identify best locations for seating. Source furniture that matches building aesthetic. Get PM approval before purchasing.' }
+      ]},
+      { id:'beau_s9', num:'09', title:'Broadway — Lighting Improvements', tasks:[
+        { t:'Hire electrician to review lighting system', instr:'Get 2 bids from licensed electricians. Present to PM. Schedule review within 2 weeks of approval.' },
+        { t:'Improve hallway lighting (multiple lights, softer tone)', instr:'Implement electrician recommendations. Install warmer-tone bulbs throughout. Photograph before and after.' }
+      ]},
+      { id:'beau_s10', num:'10', title:'Broadway — Floors & Surfaces', tasks:[
+        { t:'Replace flooring in media lobby area', instr:'Get 2 bids for flooring replacement. Present options and costs to PM. Schedule after approval.' },
+        { t:'Inspect and improve general flooring conditions', instr:'Walk all floors. Note damage, stains, and wear. Create prioritized repair list with cost estimates.' }
+      ]},
+      { id:'beau_s11', num:'11', title:'Broadway — Fire Escape Rooms', tasks:[
+        { t:'Clean and repair walls in fire escape rooms', instr:'Full clean first. Then patch and paint walls. Confirm fire code compliance is maintained throughout.' },
+        { t:'Convert lower fire escape room into usable sitting space', instr:'Confirm conversion is fire-code compliant before any work begins. Get PM approval on design.' },
+        { t:'Add seating and improve usability of fire escape room space', instr:'Source appropriate seating. Install after fire code review is complete and PM has approved.' }
+      ]},
+      { id:'beau_s12', num:'12', title:'Broadway — Standardization', tasks:[
+        { t:'Design and standardize all unit/bathroom numbering', instr:'Create numbering system that is logical and consistent. Present design to PM for approval.' },
+        { t:'Implement consistent signage format across building', instr:'All signs must use the approved format. Replace every non-standard sign. Photograph completed installation.' }
+      ]},
+      { id:'beau_s13', num:'13', title:'Broadway — Front Commercial Presence', tasks:[
+        { t:'Review all commercial signage at front of building', instr:'Document every sign at the front. Note any inconsistency, damage, or branding issues.' },
+        { t:'Propose improvements for cleaner, more unified appearance', instr:'Create written proposal with visuals if possible. Present to PM and ownership for approval.' }
+      ]},
+      { id:'beau_s14', num:'14', title:'Final Standard Validation', tasks:[
+        { t:'Building feels clean, organized, and intentional upon entry', instr:'Walk both properties as a first-time visitor. If anything feels off, it is not done. PM sign-off required.' },
+        { t:'No clutter, no random signage, no graffiti', instr:'Zero tolerance. Any single instance means this task is not complete.' },
+        { t:'Lighting is consistent and welcoming', instr:'Walk all common areas. Every space must have adequate, warm, consistent lighting.' },
+        { t:'Spaces feel safe, usable, and maintained', instr:'Final PM walkthrough of all common areas. Document with photos. Sign off only when all areas pass.' }
+      ]}
+    ]
+  },
+  'Closet & Storage': {
+    icon: '🚪',
+    sections: [
+      { id:'cls_s1', num:'01', title:'Inventory & Identification', tasks:[
+        { t:'Inventory all closets', instr:'Walk every floor. List every closet by location and current use.' },
+        { t:'Assign numbering system', instr:'Number all closets systematically (e.g., 1A, 1B, 2A). Post number inside each door.' },
+        { t:'Map closets on floor plans', instr:'Mark all closet locations on floor plans. Note number and current use.' }
+      ]},
+      { id:'cls_s2', num:'02', title:'Cleanup', tasks:[
+        { t:'Inspect contents of each closet', instr:'Open and photograph every closet. Document all contents.' },
+        { t:'Identify debris vs needed items', instr:'Sort contents into: keep, relocate, or dispose. Document decisions.' },
+        { t:'Remove and dispose of trash', instr:'Remove all debris. Dispose of per property waste procedures.' }
+      ]},
+      { id:'cls_s3', num:'03', title:'Organization', tasks:[
+        { t:'Assign role to each closet', instr:'Define the single purpose of each closet: cleaning, maintenance, storage, etc.' },
+        { t:'Label closets by function', instr:'Install weatherproof label on each door indicating its assigned purpose.' },
+        { t:'Organize contents', instr:'Arrange contents to match assigned role. Group by item type. Use bins or shelving.' }
+      ]},
+      { id:'cls_s4', num:'04', title:'Security', tasks:[
+        { t:'Install locks on all closets', instr:'Every closet must have a functioning keyed lock. No padlocks on primary closets.' },
+        { t:'Assign access codes', instr:'Document who has access to each closet. Store in AppFolio.' },
+        { t:'Control and document access', instr:'Create key log. Every key issued must be signed for and tracked.' }
+      ]},
+      { id:'cls_s5', num:'05', title:'Tracking System', tasks:[
+        { t:'Define electronic tracking solution', instr:'Evaluate AppFolio, spreadsheet, or dedicated app for closet content tracking.' },
+        { t:'Implement tracking system', instr:'Set up chosen system. Enter all current contents and locations.' },
+        { t:'Track contents and usage', instr:'Update system whenever items are added, removed, or moved.' }
+      ]},
+      { id:'cls_s6', num:'06', title:'Documentation', tasks:[
+        { t:'Create backup inventory document', instr:'Maintain physical binder backup of closet inventory in office.' },
+        { t:'Store records in AppFolio', instr:'Upload all closet photos, inventory lists, and key logs to AppFolio.' },
+        { t:'Update floor maps with closet data', instr:'Annotate floor plans with final closet numbers, purposes, and access info.' }
+      ]},
+      { id:'cls_s7', num:'07', title:'Final Validation', tasks:[
+        { t:'All closets clean and free of debris', instr:'Final PM walk. Every closet must pass visual inspection.' },
+        { t:'Closets secured and organized', instr:'Confirm all locks functioning. All contents match assigned role.' },
+        { t:'Each closet has defined purpose', instr:'PM must be able to state the purpose of every closet without referring to notes.' },
+        { t:'Tracking system operational', instr:'Confirm tracking system is live and at least one staff member has been trained.' },
+        { t:'Staff can explain closet system', instr:'Staff quiz: must name every closet, its purpose, and who has access.' }
+      ]}
+    ]
+  }
+};
+
+/* ── STATE ─────────────────────────────────────────────────────── */
+let allState = {};       // { checklistName: { sectionId_taskIdx: { done, startDate, dueDate, doneDate, instr, fieldNotes } } }
+let allCustom = {};      // { checklistName: { sectionId: [{label}] } }
+let userChecklists = []; // custom checklist names added by user
+let activeTab = '__dashboard__';
+let binId = '';
+let syncTimer = null;
+let apiKey = MASTER_KEY;
+let connectedProperty = DEFAULT_PROPERTY;
+
+function storageKey() {
+  return 'relisto_hub__' + encodeURIComponent(connectedProperty.toLowerCase());
+}
+
+function stateFor(clName) {
+  if (!allState[clName]) allState[clName] = {};
+  return allState[clName];
+}
+
+function customFor(clName) {
+  if (!allCustom[clName]) allCustom[clName] = {};
+  return allCustom[clName];
+}
+
+function getSections(clName) {
+  if (BUILT_IN_CHECKLISTS[clName]) return BUILT_IN_CHECKLISTS[clName].sections;
+  return [{ id: clName+'_s0', num:'01', title:'Tasks', tasks:[] }];
+}
+
+function getAllChecklistNames() {
+  return [...Object.keys(BUILT_IN_CHECKLISTS), ...userChecklists];
+}
+
+/* ── INIT STATE ─────────────────────────────────────────────────── */
+function initAllState() {
+  getAllChecklistNames().forEach(clName => {
+    const st = stateFor(clName);
+    const cu = customFor(clName);
+    getSections(clName).forEach(sec => {
+      sec.tasks.forEach((task, ti) => {
+        const key = sec.id + '_t' + ti;
+        if (!st[key]) st[key] = { done:false, startDate:'', dueDate:'', doneDate:'', instr:task.instr||'', fieldNotes:'' };
+        ['startDate','dueDate','doneDate','fieldNotes'].forEach(f => { if(!(f in st[key])) st[key][f]=''; });
+        if (!('instr' in st[key])) st[key].instr = task.instr||'';
+        if (!('done' in st[key])) st[key].done = false;
+      });
+      if (!cu[sec.id]) cu[sec.id] = [];
+      cu[sec.id].forEach((ct, ci) => {
+        const key = sec.id + '_custom' + ci;
+        if (!st[key]) st[key] = { done:false, startDate:'', dueDate:'', doneDate:'', instr:'', fieldNotes:'' };
+        ['startDate','dueDate','doneDate','fieldNotes','instr'].forEach(f => { if(!(f in st[key])) st[key][f]=''; });
+        if (!('done' in st[key])) st[key].done = false;
+      });
+    });
+  });
+}
+
+/* ── TABS ─────────────────────────────────────────────────────────── */
+function renderTabs() {
+  const bar = document.getElementById('tabBar');
+  // Remove all except dashboard and add-button
+  [...bar.querySelectorAll('.tab:not(.tab-dashboard):not(.tab-add)')].forEach(t=>t.remove());
+  const addBtn = bar.querySelector('.tab-add');
+
+  getAllChecklistNames().forEach(clName => {
+    const pct = getChecklistPct(clName);
+    const icon = BUILT_IN_CHECKLISTS[clName]?.icon || '📋';
+    const btn = document.createElement('button');
+    btn.className = 'tab' + (activeTab === clName ? ' active' : '');
+    btn.innerHTML = `${icon} ${clName} <span class="tab-pct">${pct}%</span>`;
+    btn.onclick = () => switchTab(clName);
+    bar.insertBefore(btn, addBtn);
+  });
+
+  // Dashboard tab active state
+  bar.querySelector('.tab-dashboard').classList.toggle('active', activeTab === '__dashboard__');
+}
+
+function switchTab(name) {
+  syncTextareas();
+  activeTab = name;
+  renderTabs();
+  renderContent();
+  const toolbar = document.getElementById('toolbar');
+  toolbar.style.display = name === '__dashboard__' ? 'none' : 'flex';
+}
+
+/* ── CONTENT RENDER ─────────────────────────────────────────────── */
+function renderContent() {
+  const area = document.getElementById('contentArea');
+  if (activeTab === '__dashboard__') {
+    renderDashboard(area);
+    return;
+  }
+  const clName = activeTab;
+  const sections = getSections(clName);
+  const st = stateFor(clName);
+  const cu = customFor(clName);
+
+  let html = '<div class="main">';
+  area.innerHTML = '<div class="main" id="checklistRoot"></div>';
+  const root = area.querySelector('#checklistRoot');
+
+  sections.forEach(sec => {
+    const tasks = sec.tasks;
+    const doneCount = tasks.filter((_,ti) => st[sec.id+'_t'+ti]?.done).length +
+                      (cu[sec.id]||[]).filter((_,ci) => st[sec.id+'_custom'+ci]?.done).length;
+    const total = tasks.length + (cu[sec.id]||[]).length;
+
+    const card = document.createElement('div');
+    card.className = 'section-card';
+
+    const hdr = document.createElement('div');
+    hdr.className = 'section-header';
+    hdr.innerHTML = `<span class="sec-num">${sec.num}</span><span class="sec-title">${sec.title}</span><span class="sec-prog">${doneCount}/${total}</span><span class="sec-tog open" id="tog_${sec.id}">▾</span>`;
+    hdr.onclick = () => { document.getElementById('body_'+sec.id)?.classList.toggle('open'); document.getElementById('tog_'+sec.id)?.classList.toggle('open'); };
+    card.appendChild(hdr);
+
+    const body = document.createElement('div');
+    body.className = 'sec-body open';
+    body.id = 'body_' + sec.id;
+
+    // Built-in tasks
+    tasks.forEach((task, ti) => {
+      const key = sec.id + '_t' + ti;
+      const s = st[key] || { done:false, startDate:'', dueDate:'', doneDate:'', instr:task.instr||'', fieldNotes:'' };
+      body.appendChild(buildTaskRow(clName, key, task.t, s, false, null, null));
+    });
+
+    // Custom tasks
+    (cu[sec.id]||[]).forEach((ct, ci) => {
+      const key = sec.id + '_custom' + ci;
+      const s = st[key] || { done:false, startDate:'', dueDate:'', doneDate:'', instr:'', fieldNotes:'' };
+      body.appendChild(buildCustomTaskRow(clName, sec.id, ci, ct.label, s));
+    });
+
+    // Add task button
+    const addRow = document.createElement('div');
+    addRow.className = 'add-task-row';
+    addRow.id = 'addrow_'+sec.id;
+    addRow.innerHTML = `<button class="add-task-btn" onclick="showAddTask('${sec.id}','${clName}')">+ Add Task</button><div class="add-task-input-wrap" id="addinput_${sec.id}" style="display:none"><input type="text" class="add-task-input" id="addinput_text_${sec.id}" placeholder="Task name…" onkeydown="if(event.key==='Enter')confirmAddTask('${sec.id}','${clName}')"><button class="btn primary" onclick="confirmAddTask('${sec.id}','${clName}')">Add</button><button class="btn" onclick="cancelAddTask('${sec.id}')">Cancel</button></div>`;
+    body.appendChild(addRow);
+
+    card.appendChild(body);
+    root.appendChild(card);
+  });
+
+  updateProgress();
+}
+
+function buildTaskRow(clName, key, label, s, isCustom, secId, ci) {
+  const row = document.createElement('div');
+  row.className = `task-row${s.done?' done':''}`;
+
+  const startCard = s.startDate
+    ? `<div class="date-card start-card active"><div class="dc-icon">▶</div><div class="dc-lbl">Started</div><div class="dc-input-wrap"><input type="date" value="${s.startDate}" onchange="updateF('${clName}','${key}','startDate',this.value)"></div></div>`
+    : `<div class="date-card start-card tappable" onclick="stampF('${clName}','${key}','startDate')"><div class="dc-icon">▶</div><div class="dc-lbl">Start</div><div class="dc-hint">tap to begin</div></div>`;
+
+  const dueCard = `<div class="date-card due-card${s.dueDate?' active':''}"><div class="dc-icon">📅</div><div class="dc-lbl">Due</div><div class="dc-input-wrap"><input type="date" value="${s.dueDate}" onchange="updateF('${clName}','${key}','dueDate',this.value)"></div></div>`;
+
+  const doneCard = s.doneDate
+    ? `<div class="date-card done-card active"><div class="dc-icon">✅</div><div class="dc-lbl">Completed</div><div class="dc-input-wrap"><input type="date" value="${s.doneDate}" onchange="updateF('${clName}','${key}','doneDate',this.value)"></div></div>`
+    : `<div class="date-card done-card tappable" onclick="stampF('${clName}','${key}','doneDate')"><div class="dc-icon">⬜</div><div class="dc-lbl">Done</div><div class="dc-hint">tap to complete</div></div>`;
+
+  const checkHandler = isCustom
+    ? `toggleCustomF('${clName}','${secId}',${ci},this.checked)`
+    : `toggleF('${clName}','${key}',this.checked)`;
+
+  const deleteBtn = isCustom ? `<button class="delete-task-btn" onclick="deleteCustomF('${clName}','${secId}',${ci})" title="Delete task">✕</button>` : '';
+
+  row.innerHTML = `
+    <div class="task-top">
+      <input type="checkbox" class="task-check" ${s.done?'checked':''} onchange="${checkHandler}">
+      <div class="task-label">${label}${s.done?'<span class="done-tag">✓</span>':''}${isCustom?'<span class="custom-badge">Custom</span>':''}</div>
+      ${deleteBtn}
+    </div>
+    <div class="date-row">${startCard}${dueCard}${doneCard}</div>
+    <div class="notes-area">
+      <div class="notes-block">
+        <div class="notes-hdr"><span class="badge instr">Instructions</span></div>
+        <textarea class="notes-input" onchange="updateF('${clName}','${key}','instr',this.value)">${s.instr}</textarea>
+      </div>
+      <div class="notes-block">
+        <div class="notes-hdr field"><span class="badge field">Field Agent</span></div>
+        <textarea class="notes-input" placeholder="Observations, notes, completion details…" onchange="updateF('${clName}','${key}','fieldNotes',this.value)">${s.fieldNotes}</textarea>
+      </div>
+    </div>`;
+  return row;
+}
+
+function buildCustomTaskRow(clName, secId, ci, label, s) {
+  return buildTaskRow(clName, secId+'_custom'+ci, label, s, true, secId, ci);
+}
+
+/* ── DASHBOARD ─────────────────────────────────────────────────── */
+function renderDashboard(area) {
+  const names = getAllChecklistNames();
+  let html = '<div class="dashboard">';
+  html += `<div class="dash-section-title">📊 All Checklists — ${connectedProperty}</div>`;
+  html += '<div class="dash-grid">';
+
+  names.forEach(clName => {
+    const st = stateFor(clName);
+    const cu = customFor(clName);
+    const secs = getSections(clName);
+    let total=0, done=0, overdue=0;
+    const today = new Date().toISOString().split('T')[0];
+    secs.forEach(sec => {
+      sec.tasks.forEach((_,ti) => {
+        const s = st[sec.id+'_t'+ti];
+        if(s){total++;if(s.done)done++;if(!s.done&&s.dueDate&&s.dueDate<today)overdue++;}
+      });
+      (cu[sec.id]||[]).forEach((_,ci)=>{
+        const s = st[sec.id+'_custom'+ci];
+        if(s){total++;if(s.done)done++;if(!s.done&&s.dueDate&&s.dueDate<today)overdue++;}
+      });
+    });
+    const pct = total ? Math.round((done/total)*100) : 0;
+    const icon = BUILT_IN_CHECKLISTS[clName]?.icon || '📋';
+    html += `<div class="dash-card" onclick="switchTab('${clName.replace(/'/g,"\\'")}')">
+      <div class="dash-card-pct">${pct}%</div>
+      <div class="dash-card-icon">${icon}</div>
+      <div class="dash-card-name">${clName}</div>
+      <div class="dash-card-stats">${done} of ${total} tasks complete</div>
+      <div class="dash-card-bar"><div class="dash-card-fill" style="width:${pct}%"></div></div>
+      ${overdue?`<div class="dash-overdue">⚠ ${overdue} overdue</div>`:''}
+    </div>`;
+  });
+
+  html += '</div>';
+
+  // Combined progress bar
+  html += `<div class="dash-section-title" style="margin-top:8px">Combined Progress</div>`;
+  html += '<div class="dash-combined-bar">';
+  names.forEach(clName => {
+    const pct = getChecklistPct(clName);
+    const icon = BUILT_IN_CHECKLISTS[clName]?.icon || '📋';
+    html += `<div class="dash-combined-row">
+      <div class="dcr-name">${icon} ${clName}</div>
+      <div class="dcr-bar-wrap"><div class="dcr-bar" style="width:${pct}%"></div></div>
+      <div class="dcr-pct">${pct}%</div>
+    </div>`;
+  });
+  html += '</div></div>';
+  area.innerHTML = html;
+}
+
+function getChecklistPct(clName) {
+  const st = stateFor(clName);
+  const cu = customFor(clName);
+  let total=0, done=0;
+  getSections(clName).forEach(sec => {
+    sec.tasks.forEach((_,ti)=>{ const s=st[sec.id+'_t'+ti]; if(s){total++;if(s.done)done++;} });
+    (cu[sec.id]||[]).forEach((_,ci)=>{ const s=st[sec.id+'_custom'+ci]; if(s){total++;if(s.done)done++;} });
+  });
+  return total ? Math.round((done/total)*100) : 0;
+}
+
+/* ── STATE MUTATIONS ─────────────────────────────────────────────── */
+function refreshDateRow(clName, key, field) {
+  // Find the task row by looking for a checkbox tied to this key
+  // and rebuild only its date-row div
+  const isCustom = key.includes('_custom');
+  let cb = null;
+  if (isCustom) {
+    const parts = key.match(/(.+)_custom(\d+)/);
+    if (parts) cb = document.querySelector(`input[onchange*="toggleCustomF('${clName}','${parts[1]}',${parts[2]}"]`);
+  } else {
+    cb = document.querySelector(`input[onchange*="toggleF('${clName}','${key}"]`);
+  }
+  if (!cb) return;
+  const row = cb.closest('.task-row');
+  if (!row) return;
+  const dateRow = row.querySelector('.date-row');
+  if (!dateRow) return;
+
+  const st = stateFor(clName);
+  const s = st[key] || {};
+  const isCustomKey = key.includes('_custom');
+
+  const startCard = s.startDate
+    ? `<div class="date-card start-card active"><div class="dc-icon">▶</div><div class="dc-lbl">Started</div><div class="dc-input-wrap"><input type="date" value="${s.startDate}" onchange="updateF('${clName}','${key}','startDate',this.value)"></div></div>`
+    : `<div class="date-card start-card tappable" onclick="stampF('${clName}','${key}','startDate')"><div class="dc-icon">▶</div><div class="dc-lbl">Start</div><div class="dc-hint">tap to begin</div></div>`;
+
+  const dueCard = `<div class="date-card due-card${s.dueDate?' active':''}"><div class="dc-icon">📅</div><div class="dc-lbl">Due</div><div class="dc-input-wrap"><input type="date" value="${s.dueDate||''}" onchange="updateF('${clName}','${key}','dueDate',this.value)"></div></div>`;
+
+  const doneCard = s.doneDate
+    ? `<div class="date-card done-card active"><div class="dc-icon">✅</div><div class="dc-lbl">Completed</div><div class="dc-input-wrap"><input type="date" value="${s.doneDate}" onchange="updateF('${clName}','${key}','doneDate',this.value)"></div></div>`
+    : `<div class="date-card done-card tappable" onclick="stampF('${clName}','${key}','doneDate')"><div class="dc-icon">⬜</div><div class="dc-lbl">Done</div><div class="dc-hint">tap to complete</div></div>`;
+
+  dateRow.innerHTML = startCard + dueCard + doneCard;
+}
+
+function updateTabPct(clName) {
+  // Update just the % badge on the tab without re-rendering tabs
+  const pct = getChecklistPct(clName);
+  document.querySelectorAll('.tab').forEach(tab => {
+    if (tab.textContent.includes(clName)) {
+      const badge = tab.querySelector('.tab-pct');
+      if (badge) badge.textContent = pct + '%';
+    }
+  });
+  // Also update dashboard if visible
+  if (activeTab === '__dashboard__') renderContent();
+}
+
+function updateF(clName, key, field, val) {
+  const st = stateFor(clName);
+  if (!st[key]) st[key] = { done:false, startDate:'', dueDate:'', doneDate:'', instr:'', fieldNotes:'' };
+  st[key][field] = val;
+  if (field === 'dueDate' || field === 'doneDate' || field === 'startDate') {
+    refreshDateRow(clName, key, field);
+    updateTabPct(clName);
+  }
+  updateProgress();
+  scheduleSave();
+  showSaving();
+}
+
+function stampF(clName, key, field) {
+  const today = new Date().toISOString().split('T')[0];
+  const st = stateFor(clName);
+  if (!st[key]) st[key] = { done:false, startDate:'', dueDate:'', doneDate:'', instr:'', fieldNotes:'' };
+  st[key][field] = today;
+  if (field === 'doneDate') st[key].done = true;
+  // Rebuild just the date-row for this task
+  refreshDateRow(clName, key, field);
+  if (field === 'doneDate') {
+    const cb = document.querySelector(`input[onchange*="toggleF('${clName}','${key}"]`);
+    if (cb) {
+      cb.checked = true;
+      const row = cb.closest('.task-row');
+      if (row) {
+        row.classList.add('done');
+        const lbl = row.querySelector('.task-label');
+        if (lbl && !lbl.querySelector('.done-tag')) lbl.insertAdjacentHTML('beforeend','<span class="done-tag">✓</span>');
+      }
+    }
+  }
+  updateProgress();
+  updateTabPct(clName);
+  scheduleSave();
+  showSaving();
+}
+
+function toggleF(clName, key, checked) {
+  syncTextareas();
+  const st = stateFor(clName);
+  if (!st[key]) st[key] = { done:false, startDate:'', dueDate:'', doneDate:'', instr:'', fieldNotes:'' };
+  st[key].done = checked;
+  // Update row class without full re-render
+  const cb = document.querySelector(`input[onchange*="toggleF('${clName}','${key}"]`);
+  if (cb) {
+    const row = cb.closest('.task-row');
+    if (row) {
+      row.classList.toggle('done', checked);
+      const lbl = row.querySelector('.task-label');
+      if (lbl) {
+        const existing = lbl.querySelector('.done-tag');
+        if (checked && !existing) lbl.insertAdjacentHTML('beforeend','<span class="done-tag">✓</span>');
+        if (!checked && existing) existing.remove();
+      }
+    }
+  }
+  updateProgress();
+  updateTabPct(clName);
+  scheduleSave();
+  showSaving();
+}
+
+function toggleCustomF(clName, secId, ci, checked) {
+  syncTextareas();
+  const key = secId+'_custom'+ci;
+  const st = stateFor(clName);
+  if (!st[key]) st[key] = { done:false, startDate:'', dueDate:'', doneDate:'', instr:'', fieldNotes:'' };
+  st[key].done = checked;
+  const cb = document.querySelector(`input[onchange*="toggleCustomF('${clName}','${secId}',${ci}"]`);
+  if (cb) {
+    const row = cb.closest('.task-row');
+    if (row) {
+      row.classList.toggle('done', checked);
+      const lbl = row.querySelector('.task-label');
+      if (lbl) {
+        const existing = lbl.querySelector('.done-tag');
+        if (checked && !existing) lbl.insertAdjacentHTML('beforeend','<span class="done-tag">✓</span>');
+        if (!checked && existing) existing.remove();
+      }
+    }
+  }
+  updateProgress();
+  updateTabPct(clName);
+  scheduleSave();
+  showSaving();
+}
+
+/* ── CUSTOM TASKS ─────────────────────────────────────────────────── */
+function showAddTask(secId, clName) {
+  document.getElementById('addinput_'+secId).style.display = 'flex';
+  document.querySelector('#addrow_'+secId+' .add-task-btn').style.display = 'none';
+  setTimeout(()=>document.getElementById('addinput_text_'+secId).focus(), 50);
+}
+function cancelAddTask(secId) {
+  document.getElementById('addinput_'+secId).style.display = 'none';
+  document.querySelector('#addrow_'+secId+' .add-task-btn').style.display = '';
+  document.getElementById('addinput_text_'+secId).value = '';
+}
+function confirmAddTask(secId, clName) {
+  const input = document.getElementById('addinput_text_'+secId);
+  const label = input.value.trim();
+  if (!label) { input.focus(); return; }
+  const cu = customFor(clName);
+  if (!cu[secId]) cu[secId] = [];
+  cu[secId].push({ label });
+  const key = secId+'_custom'+(cu[secId].length-1);
+  stateFor(clName)[key] = { done:false, startDate:'', dueDate:'', doneDate:'', instr:'', fieldNotes:'' };
+  renderContent();
+  renderTabs();
+  document.getElementById('body_'+secId)?.classList.add('open');
+  document.getElementById('tog_'+secId)?.classList.add('open');
+  scheduleSave();
+}
+function deleteCustomF(clName, secId, ci) {
+  if (!confirm('Delete this task?')) return;
+  syncTextareas();
+  const cu = customFor(clName);
+  const st = stateFor(clName);
+  cu[secId].splice(ci, 1);
+  const newSt = {};
+  cu[secId].forEach((_, newCi) => {
+    const oldKey = secId+'_custom'+(newCi >= ci ? newCi+1 : newCi);
+    newSt[secId+'_custom'+newCi] = st[oldKey] || { done:false, startDate:'', dueDate:'', doneDate:'', instr:'', fieldNotes:'' };
+  });
+  Object.keys(st).forEach(k => { if(k.startsWith(secId+'_custom')) delete st[k]; });
+  Object.assign(st, newSt);
+  renderContent();
+  renderTabs();
+  scheduleSave();
+}
+
+/* ── NEW CHECKLIST MODAL ─────────────────────────────────────────── */
+function openNewChecklistModal() {
+  document.getElementById('newChecklistBg').classList.add('open');
+  setTimeout(()=>document.getElementById('newChecklistName').focus(), 100);
+}
+function closeNewChecklist() {
+  document.getElementById('newChecklistBg').classList.remove('open');
+  document.getElementById('newChecklistName').value = '';
+}
+function confirmNewChecklist() {
+  const name = document.getElementById('newChecklistName').value.trim();
+  if (!name) return;
+  if (getAllChecklistNames().includes(name)) { alert('A checklist with that name already exists.'); return; }
+  userChecklists.push(name);
+  closeNewChecklist();
+  initAllState();
+  renderTabs();
+  switchTab(name);
+  scheduleSave();
+  showToast('✓ "'+name+'" checklist created!');
+}
+
+/* ── PROGRESS ─────────────────────────────────────────────────────── */
+function updateProgress() {
+  let total=0, done=0;
+  getAllChecklistNames().forEach(clName => {
+    const st = stateFor(clName);
+    const cu = customFor(clName);
+    getSections(clName).forEach(sec => {
+      sec.tasks.forEach((_,ti)=>{ const s=st[sec.id+'_t'+ti]; if(s){total++;if(s.done)done++;} });
+      (cu[sec.id]||[]).forEach((_,ci)=>{ const s=st[sec.id+'_custom'+ci]; if(s){total++;if(s.done)done++;} });
+    });
+  });
+  const pct = total ? Math.round((done/total)*100) : 0;
+  document.getElementById('progressFill').style.width = pct+'%';
+  document.getElementById('progressCount').textContent = done+' / '+total;
+}
+
+/* ── EXPAND / COLLAPSE ───────────────────────────────────────────── */
+function expandAll() {
+  document.querySelectorAll('.sec-body').forEach(b=>b.classList.add('open'));
+  document.querySelectorAll('.sec-tog').forEach(t=>t.classList.add('open'));
+}
+function collapseAll() {
+  document.querySelectorAll('.sec-body').forEach(b=>b.classList.remove('open'));
+  document.querySelectorAll('.sec-tog').forEach(t=>t.classList.remove('open'));
+}
+
+/* ── SYNC ─────────────────────────────────────────────────────────── */
+function setSyncStatus(status, msg) {
+  document.getElementById('syncDot').className = 'sync-dot '+status;
+  document.getElementById('syncMsg').textContent = msg;
+}
+function showSaving() {
+  document.getElementById('syncDot').className = 'sync-dot loading';
+  document.getElementById('syncMsg').textContent = 'Saving…';
+}
+function scheduleSave() {
+  clearTimeout(syncTimer);
+  syncTimer = setTimeout(()=>{ syncTextareas(); saveToBin(); }, 1500);
+}
+
+function payload() {
+  return { allState, allCustom, userChecklists, property: connectedProperty, version:2, updatedAt: new Date().toISOString() };
+}
+
+async function createBin() {
+  setSyncStatus('loading','Creating database…');
+  try {
+    const r = await fetch('https://api.jsonbin.io/v3/b', {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json', 'X-Master-Key':apiKey, 'X-Bin-Name':'ReLISTO Property Hub', 'X-Collection-Name':'ReLISTO' },
+      body: JSON.stringify(payload())
+    });
+    const d = await r.json();
+    if (d.metadata?.id) {
+      binId = d.metadata.id;
+      localStorage.setItem(storageKey(), binId);
+      setSyncStatus('ok','✓ Connected — '+new Date().toLocaleTimeString());
+      showToast('✓ Database created! Bin ID: '+binId);
+    } else { setSyncStatus('error','Connection failed — check Master Key'); }
+  } catch(e) { setSyncStatus('error','Network error: '+e.message); }
+}
+
+async function loadFromBin() {
+  if (!apiKey || !binId) return;
+  setSyncStatus('loading','Syncing…');
+  try {
+    const r = await fetch('https://api.jsonbin.io/v3/b/'+binId+'/latest', { headers:{ 'X-Master-Key':apiKey } });
+    const d = await r.json();
+    if (d.record?.allState) {
+      allState = d.record.allState;
+      allCustom = d.record.allCustom || {};
+      userChecklists = d.record.userChecklists || [];
+      initAllState();
+      renderTabs();
+      renderContent();
+      updateProgress();
+      setSyncStatus('ok','✓ Synced — '+new Date().toLocaleTimeString());
+    } else { setSyncStatus('error','No data found'); }
+  } catch(e) { setSyncStatus('error','Sync failed: '+e.message); }
+}
+
+async function saveToBin() {
+  saveLocal();
+  if (!apiKey || !binId) return;
+  try {
+    await fetch('https://api.jsonbin.io/v3/b/'+binId, {
+      method:'PUT',
+      headers:{ 'Content-Type':'application/json', 'X-Master-Key':apiKey },
+      body: JSON.stringify(payload())
+    });
+    setSyncStatus('ok','✓ Saved — '+new Date().toLocaleTimeString());
+  } catch(e) { setSyncStatus('error','Save failed: '+e.message); }
+}
+
+function saveLocal() {
+  try { localStorage.setItem('relisto_hub_state', JSON.stringify({ allState, allCustom, userChecklists })); } catch(e){}
+}
+
+async function syncNow() {
+  syncTextareas();
+  if (binId) await loadFromBin();
+  else { saveToBin(); showToast('Saved locally.'); }
+}
+
+function showBinInfo() {
+  const url = window.location.href;
+  if (navigator.clipboard) navigator.clipboard.writeText(url).then(()=>showToast('✓ URL copied — share with your team!'));
+  alert('Share this URL:\n'+url+'\n\nBin ID: '+(binId||'Not connected'));
+}
+
+/* ── SYNC TEXTAREAS ─────────────────────────────────────────────── */
+function syncTextareas() {
+  document.querySelectorAll('textarea').forEach(ta => {
+    const oc = ta.getAttribute('onchange')||'';
+    const m = oc.match(/updateF\('([^']+)','([^']+)','([^']+)'/);
+    if (m) {
+      const st = stateFor(m[1]);
+      if (st[m[2]]) st[m[2]][m[3]] = ta.value;
+    }
+  });
+}
+
+/* ── MODAL ─────────────────────────────────────────────────────── */
+let currentModalType = 'timeline';
+function openModal(type) {
+  currentModalType = type;
+  document.getElementById('modalTitle').textContent = type === 'timeline' ? 'Timeline' : 'Report';
+  document.getElementById('modalBg').classList.add('open');
+  type === 'timeline' ? renderTimeline() : renderReport();
+}
+function closeModal() { document.getElementById('modalBg').classList.remove('open'); }
+
+function renderTimeline() {
+  const wrap = document.getElementById('modalContent');
+  const clName = activeTab === '__dashboard__' ? null : activeTab;
+  const items = [];
+  const names = clName ? [clName] : getAllChecklistNames();
+
+  names.forEach(name => {
+    const st = stateFor(name);
+    const cu = customFor(name);
+    getSections(name).forEach(sec => {
+      sec.tasks.forEach((task,ti) => {
+        const s = st[sec.id+'_t'+ti];
+        if (s && (s.dueDate||s.doneDate)) items.push({ label:task.t, section:sec.title, checklist:name, dueDate:s.dueDate, doneDate:s.doneDate, done:s.done });
+      });
+      (cu[sec.id]||[]).forEach((ct,ci) => {
+        const s = st[sec.id+'_custom'+ci];
+        if (s && (s.dueDate||s.doneDate)) items.push({ label:ct.label, section:sec.title, checklist:name, dueDate:s.dueDate, doneDate:s.doneDate, done:s.done });
+      });
+    });
+  });
+
+  if (!items.length) { wrap.innerHTML='<div class="no-data">No dates set yet.</div>'; return; }
+
+  items.sort((a,b)=>(a.dueDate||'9999').localeCompare(b.dueDate||'9999'));
+  const allTs = []; items.forEach(i=>{ if(i.dueDate) allTs.push(new Date(i.dueDate).getTime()); if(i.doneDate) allTs.push(new Date(i.doneDate).getTime()); });
+  const minD=Math.min(...allTs), maxD=Math.max(...allTs), range=maxD-minD||86400000;
+  const fmt = d => { if(!d) return ''; const dt=new Date(d); return `${dt.getMonth()+1}/${dt.getDate()}`; };
+  const pct = t => Math.max(0,Math.min(97,((t-minD)/range)*100));
+
+  let html = '<div style="min-width:520px;overflow-x:auto"><div class="chart-axis">';
+  for(let i=0;i<=5;i++) html+=`<span>${fmt(new Date(minD+(range*i/5)))}</span>`;
+  html+='</div>';
+
+  let lastSec='';
+  items.forEach(item => {
+    if(item.section!==lastSec){ html+=`<div class="sec-divider">${item.checklist} / ${item.section}</div>`; lastSec=item.section; }
+    const dueT = item.dueDate?new Date(item.dueDate).getTime():null;
+    const doneT= item.doneDate?new Date(item.doneDate).getTime():null;
+    const left = dueT?pct(dueT):0;
+    const donePct = doneT?pct(doneT):null;
+    html+=`<div class="tl-row">
+      <div class="tl-label" title="${item.label}">${item.done?'✓ ':''}${item.label}</div>
+      <div class="tl-bar-wrap">
+        ${dueT?`<div class="tl-bar" style="background:var(--lime);opacity:0.75;left:${left}%;width:${Math.max(8,100-left)}%"><span class="tl-bar-txt">${fmt(item.dueDate)}</span></div>`:''}
+        ${donePct!==null?`<div class="tl-done-line" style="left:${donePct}%"></div>`:''}
+      </div>
+    </div>`;
+  });
+  html+='</div>';
+  wrap.innerHTML = html;
+}
+
+function renderReport() {
+  const wrap = document.getElementById('modalContent');
+  syncTextareas();
+  const today = new Date().toISOString().split('T')[0];
+  let html = '';
+
+  // Summary cards
+  let grandTotal=0, grandDone=0, grandOver=0;
+  const names = getAllChecklistNames();
+  names.forEach(clName => {
+    const st=stateFor(clName), cu=customFor(clName);
+    getSections(clName).forEach(sec=>{
+      sec.tasks.forEach((_,ti)=>{ const s=st[sec.id+'_t'+ti]; if(s){grandTotal++;if(s.done)grandDone++;if(!s.done&&s.dueDate&&s.dueDate<today)grandOver++;} });
+      (cu[sec.id]||[]).forEach((_,ci)=>{ const s=st[sec.id+'_custom'+ci]; if(s){grandTotal++;if(s.done)grandDone++;if(!s.done&&s.dueDate&&s.dueDate<today)grandOver++;} });
+    });
+  });
+
+  html+=`<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:20px">
+    <div style="background:var(--off-white);border:1.5px solid var(--border);border-radius:8px;padding:14px 18px;min-width:130px"><div style="font-size:28px;font-weight:800;color:var(--lime)">${grandDone}/${grandTotal}</div><div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px">Total Tasks</div></div>
+    <div style="background:var(--off-white);border:1.5px solid var(--border);border-radius:8px;padding:14px 18px;min-width:130px"><div style="font-size:28px;font-weight:800;color:var(--lime)">${grandTotal?Math.round((grandDone/grandTotal)*100):0}%</div><div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px">Complete</div></div>
+    <div style="background:var(--off-white);border:1.5px solid var(--border);border-radius:8px;padding:14px 18px;min-width:130px"><div style="font-size:28px;font-weight:800;color:${grandOver?'#c0392b':'var(--lime)'}">${grandOver}</div><div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px">Overdue</div></div>
+  </div>`;
+
+  // Per checklist table
+  html+=`<div style="font-weight:800;font-size:13px;color:var(--charcoal);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">By Checklist</div>`;
+  html+=`<table class="report-table"><tr><th>Checklist</th><th>Done</th><th>Total</th><th>%</th><th>Overdue</th></tr>`;
+  names.forEach(clName => {
+    const st=stateFor(clName), cu=customFor(clName);
+    let t=0,d=0,o=0;
+    getSections(clName).forEach(sec=>{
+      sec.tasks.forEach((_,ti)=>{ const s=st[sec.id+'_t'+ti]; if(s){t++;if(s.done)d++;if(!s.done&&s.dueDate&&s.dueDate<today)o++;} });
+      (cu[sec.id]||[]).forEach((_,ci)=>{ const s=st[sec.id+'_custom'+ci]; if(s){t++;if(s.done)d++;if(!s.done&&s.dueDate&&s.dueDate<today)o++;} });
+    });
+    const p=t?Math.round((d/t)*100):0;
+    const icon=BUILT_IN_CHECKLISTS[clName]?.icon||'📋';
+    html+=`<tr><td>${icon} ${clName}</td><td>${d}</td><td>${t}</td><td><b style="color:${p===100?'var(--done-text)':'var(--charcoal)'}">${p}%</b></td><td>${o?`<span class="status-over">${o}</span>`:'—'}</td></tr>`;
+  });
+  html+='</table>';
+
+  // Overdue tasks
+  const overdueItems = [];
+  names.forEach(clName => {
+    const st=stateFor(clName), cu=customFor(clName);
+    getSections(clName).forEach(sec=>{
+      sec.tasks.forEach((task,ti)=>{ const s=st[sec.id+'_t'+ti]; if(s&&!s.done&&s.dueDate&&s.dueDate<today) overdueItems.push({cl:clName,label:task.t,due:s.dueDate}); });
+      (cu[sec.id]||[]).forEach((ct,ci)=>{ const s=st[sec.id+'_custom'+ci]; if(s&&!s.done&&s.dueDate&&s.dueDate<today) overdueItems.push({cl:clName,label:ct.label,due:s.dueDate}); });
+    });
+  });
+  if (overdueItems.length) {
+    html+=`<div style="font-weight:800;font-size:13px;color:#c0392b;text-transform:uppercase;letter-spacing:1px;margin:18px 0 8px">⚠ Overdue Tasks</div>`;
+    html+=`<table class="report-table"><tr><th>Checklist</th><th>Task</th><th>Due</th></tr>`;
+    overdueItems.forEach(i=>html+=`<tr><td>${i.cl}</td><td>${i.label}</td><td class="status-over">${i.due}</td></tr>`);
+    html+='</table>';
+  }
+  wrap.innerHTML = html;
+}
+
+/* ── CSV EXPORT ─────────────────────────────────────────────────── */
+function exportCSV() {
+  syncTextareas();
+  let csv = 'Checklist,Section,Task,Done,Start Date,Due Date,Done Date,Instructions,Field Agent\n';
+  const clName = activeTab === '__dashboard__' ? null : activeTab;
+  const names = clName ? [clName] : getAllChecklistNames();
+  names.forEach(name => {
+    const st=stateFor(name), cu=customFor(name);
+    const esc = v=>(v||'').replace(/"/g,'""');
+    getSections(name).forEach(sec=>{
+      sec.tasks.forEach((task,ti)=>{ const s=st[sec.id+'_t'+ti]||{}; csv+=`"${name}","${sec.title}","${task.t}","${s.done?'Yes':'No'}","${s.startDate||''}","${s.dueDate||''}","${s.doneDate||''}","${esc(s.instr)}","${esc(s.fieldNotes)}"\n`; });
+      (cu[sec.id]||[]).forEach((ct,ci)=>{ const s=st[sec.id+'_custom'+ci]||{}; csv+=`"${name} (Custom)","${sec.title}","${ct.label}","${s.done?'Yes':'No'}","${s.startDate||''}","${s.dueDate||''}","${s.doneDate||''}","${esc(s.instr)}","${esc(s.fieldNotes)}"\n`; });
+    });
+  });
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download='relisto_property_hub.csv';
+  a.click();
+}
+
+/* ── UTILS ─────────────────────────────────────────────────────── */
+function showToast(msg) {
+  const t=document.createElement('div'); t.className='toast'; t.textContent=msg;
+  document.body.appendChild(t); setTimeout(()=>t.remove(),2500);
+}
+
+document.getElementById('modalBg').addEventListener('click',e=>{ if(e.target===e.currentTarget)closeModal(); });
+document.getElementById('newChecklistBg').addEventListener('click',e=>{ if(e.target===e.currentTarget)closeNewChecklist(); });
+document.getElementById('toolbar').style.display = 'none'; // hidden on dashboard
+
+/* ── BOOT ─────────────────────────────────────────────────────── */
+initAllState();
+// Load local state first
+try {
+  const saved = localStorage.getItem('relisto_hub_state');
+  if (saved) { const p=JSON.parse(saved); allState=p.allState||{}; allCustom=p.allCustom||{}; userChecklists=p.userChecklists||[]; initAllState(); }
+} catch(e){}
+
+renderTabs();
+renderContent();
+updateProgress();
+
+// Auto-connect
+if (MASTER_KEY && MASTER_KEY !== 'YOUR_MASTER_KEY_HERE') {
+  const savedBin = localStorage.getItem(storageKey());
+  if (savedBin) { binId=savedBin; loadFromBin(); }
+  else { createBin(); }
+} else {
+  setSyncStatus('error','No Master Key — open file and replace YOUR_MASTER_KEY_HERE');
+}
+</script>
+</body>
+</html>
