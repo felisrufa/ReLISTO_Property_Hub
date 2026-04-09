@@ -274,8 +274,8 @@ header{background:var(--charcoal);padding:0;position:sticky;top:0;z-index:100;bo
 
 <script>
 /* ── CONFIG ─────────────────────────────────────────────────── */
-const MASTER_KEY       = '$2a$10$.9Ak8CqZcCO.LhCDVKruZeGOOQGVIes8gzUqnWvFq0YXdIqzfYfiq';
-const DEFAULT_PROPERTY = 'BP';
+const MASTER_KEY       = 'YOUR_MASTER_KEY_HERE';
+const DEFAULT_PROPERTY = 'ReLISTO';
 /* ─────────────────────────────────────────────────────────────── */
 
 /* ── BUILT-IN CHECKLISTS ─────────────────────────────────────── */
@@ -845,6 +845,79 @@ const BUILT_IN_CHECKLISTS = {
         { t:'No clutter, no random signage, no graffiti', instr:'Zero tolerance. Any single instance means this task is not complete.' },
         { t:'Lighting is consistent and welcoming', instr:'Walk all common areas. Every space must have adequate, warm, consistent lighting.' },
         { t:'Spaces feel safe, usable, and maintained', instr:'Final PM walkthrough of all common areas. Document with photos. Sign off only when all areas pass.' }
+      ]}
+    ]
+  },
+  'Resident Manager': {
+    icon: '🏠',
+    sections: [
+      { id:'rm_s1', num:'01', title:'Broadway — Current State Assessment', tasks:[
+        { t:'Gather all existing information on current arrangement (free rent, payments, duties, communications)', instr:'Pull any existing emails, texts, agreements, or notes related to the current RM arrangement. Compile into one folder.' },
+        { t:'Document what the resident manager is actually doing today (observed duties)', instr:'Observe and log actual duties performed over 1-2 weeks. Do not rely on what he says — document what is seen.' },
+        { t:'Meet with resident manager to understand his view of role, compensation, and agreement', instr:'Schedule informal meeting. Ask open-ended questions. Listen and document his full perspective before sharing yours.' }
+      ]},
+      { id:'rm_s2', num:'02', title:'Broadway — Internal Alignment', tasks:[
+        { t:'Define ReLISTO position on expected duties', instr:'Write out exactly what duties are expected of the Broadway RM. Be specific — no vague language.' },
+        { t:'Define ReLISTO position on expected availability', instr:'Define on-call hours, response time expectations, and coverage requirements.' },
+        { t:'Define ReLISTO position on compensation structure (rent vs pay)', instr:'Determine the correct compensation model. Get ownership input before any discussion with RM.' },
+        { t:'Confirm internally that current arrangement may not be sustainable', instr:'Document the internal conclusion in writing. Get PM and ownership sign-off before proceeding to formal discussion.' }
+      ]},
+      { id:'rm_s3', num:'03', title:'Broadway — Formal Discussion', tasks:[
+        { t:'Schedule formal meeting with resident manager', instr:'Book a dedicated meeting — not a casual conversation. Have all documentation ready before meeting.' },
+        { t:'Communicate need to formalize relationship (contract + defined duties)', instr:'Be direct and professional. Explain that a formal agreement protects both parties.' },
+        { t:'Request any existing lease, contract, or documentation from resident manager', instr:'Ask him to produce any documents he believes govern the arrangement. Review with legal if needed.' },
+        { t:'Present position that compensation structure may change', instr:'Be clear but not confrontational. Present facts only. Do not make promises in this meeting.' },
+        { t:'Ask resident manager to propose a normalized arrangement', instr:'Give him 5-7 business days to respond in writing with his proposed arrangement.' }
+      ]},
+      { id:'rm_s4', num:'04', title:'Broadway — Decision Path', tasks:[
+        { t:'Evaluate response from resident manager', instr:'Review his proposal against ReLISTO position. Document areas of agreement and disagreement.' },
+        { t:'If cooperative — proceed to formal agreement', instr:'Move to formalization steps immediately. Do not delay once cooperation is confirmed.' },
+        { t:'If not cooperative — escalate to ownership and legal', instr:'Document non-cooperation in writing. Notify ownership same day. Engage legal counsel within 48 hours.' }
+      ]},
+      { id:'rm_s5', num:'05', title:'Broadway — Formalization', tasks:[
+        { t:'Draft and execute formal agreement (duties, compensation, expectations)', instr:'Use legal counsel to draft or review agreement. Both parties must sign. No informal agreements.' },
+        { t:'Define rent obligations and payment structure in agreement', instr:'All rent credits, reductions, or free rent must be explicitly stated with dollar amounts and conditions.' },
+        { t:'Clearly document all responsibilities in writing', instr:'Duties must be specific and measurable. No vague language like "general assistance".' },
+        { t:'Store executed agreement in company records', instr:'Store signed agreement in AppFolio and physical file. Both parties receive a copy.' }
+      ]},
+      { id:'rm_s6', num:'06', title:'Post Street — System Setup', tasks:[
+        { t:'Ensure resident manager is set up in AppFolio', instr:'Create or confirm RM account in AppFolio with appropriate access level.' },
+        { t:'Ensure resident manager is set up in all communication tools', instr:'Confirm RM has access to all team communication channels used for property operations.' },
+        { t:'Confirm RM can view work orders', instr:'Have RM log in and navigate to work orders. Confirm they can see relevant property tasks.' },
+        { t:'Confirm RM can communicate with team', instr:'Send a test message through each communication tool. Confirm RM receives and can respond.' },
+        { t:'Confirm RM can report issues through system', instr:'Walk RM through issue reporting process. Have them submit a test report.' }
+      ]},
+      { id:'rm_s7', num:'07', title:'Post Street — Tenant Access & Visibility', tasks:[
+        { t:'Establish clear contact method for resident manager (phone)', instr:'Confirm RM phone number is correct and active. Test with a call before posting.' },
+        { t:'Post resident manager contact information in building', instr:'Post name and phone number in lobby and on each floor. Use standard ReLISTO signage format.' },
+        { t:'Include resident manager contact in tenant instructions', instr:'Add RM contact to all tenant welcome materials, house rules, and emergency contact documents.' }
+      ]},
+      { id:'rm_s8', num:'08', title:'Post Street — Role Training', tasks:[
+        { t:'Train resident manager on full scope of responsibilities', instr:'Conduct formal training session. Walk through every duty in writing. Do not assume prior knowledge.' },
+        { t:'Confirm RM understanding of reporting expectations', instr:'RM must be able to explain: what to report, how to report it, and when.' },
+        { t:'Confirm RM understanding of escalation procedures', instr:'RM must know the escalation chain: who to call first, second, and in an emergency.' },
+        { t:'Confirm RM understanding of emergency definitions', instr:'Define what constitutes an emergency vs a non-urgent issue. RM must demonstrate understanding.' }
+      ]},
+      { id:'rm_s9', num:'09', title:'Post Street — Core Duties', tasks:[
+        { t:'Respond to after-hours issues and emergencies', instr:'RM must be available during defined on-call hours. Response time requirement: 15 minutes for emergencies.' },
+        { t:'Provide vendor access and coordinate entry', instr:'RM is the primary point of contact for vendor access outside office hours. Must confirm access with PM.' },
+        { t:'Investigate late-night issues (noise, disturbances, safety)', instr:'RM investigates and documents. Does not confront or enforce — reports to management.' },
+        { t:'Monitor general building condition (cleanliness, safety, operations)', instr:'Daily informal walkthrough. Log anything that needs attention. Report to PM next business day.' },
+        { t:'Report all issues to management', instr:'All issues reported via agreed channel within defined timeframe. No verbal-only reports.' },
+        { t:'Serve as tenant point of contact when office is unavailable', instr:'RM is available for tenant questions during on-call hours. Non-emergency issues logged for next day.' },
+        { t:'Assist with basic operational support (doors, coordination, access)', instr:'RM handles minor operational tasks within defined scope. Anything beyond scope escalates to PM.' }
+      ]},
+      { id:'rm_s10', num:'10', title:'Post Street — Standard Responsibilities', tasks:[
+        { t:'Monitor for security concerns, unauthorized access, and safety risks', instr:'RM conducts informal security check during evening rounds. Documents and reports any concerns.' },
+        { t:'Identify and report maintenance issues proactively', instr:'RM does not wait to be told about maintenance issues. Reports anything observed immediately.' },
+        { t:'Report rule violations (reporting only — no enforcement)', instr:'RM documents violation with photo if possible. Reports to management. Never confronts tenant directly.' },
+        { t:'Maintain knowledge of building systems: water shutoff, electrical, access points', instr:'Walk RM through all critical systems. Confirm they can locate and describe each one without assistance.' },
+        { t:'Maintain availability during defined on-call hours', instr:'On-call hours must be documented in RM agreement. Confirm RM is reachable during test check-ins.' }
+      ]},
+      { id:'rm_s11', num:'11', title:'Post Street — Accountability', tasks:[
+        { t:'Establish weekly or biweekly check-in with management', instr:'Set recurring calendar meeting. RM prepares brief update on building status for each check-in.' },
+        { t:'Define response time expectations', instr:'Document required response times: emergency (15 min), urgent (1 hour), non-urgent (next business day).' },
+        { t:'Track responsiveness and quality of reporting', instr:'PM logs RM response times and report quality monthly. Address issues at check-in before they escalate.' }
       ]}
     ]
   },
