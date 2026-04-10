@@ -274,7 +274,7 @@ header{background:var(--charcoal);padding:0;position:sticky;top:0;z-index:100;bo
 
 <script>
 /* ── CONFIG ─────────────────────────────────────────────────── */
-const MASTER_KEY       = '$2a$10$.9Ak8CqZcCO.LhCDVKruZeGOOQGVIes8gzUqnWvFq0YXdIqzfYfiq';
+const MASTER_KEY       = 'YOUR_MASTER_KEY_HERE';
 const DEFAULT_PROPERTY = 'ReLISTO';
 /* ─────────────────────────────────────────────────────────────── */
 
@@ -1495,29 +1495,59 @@ async function loadFromBin() {
     const r = await fetch('https://api.jsonbin.io/v3/b/'+binId+'/latest', { headers:{ 'X-Master-Key':apiKey } });
     const d = await r.json();
     if (d.record?.allState) {
+      // Merge DB state — DB always wins over local
       allState = d.record.allState;
       allCustom = d.record.allCustom || {};
       userChecklists = d.record.userChecklists || [];
+      // Save to local as backup
+      saveLocal();
       initAllState();
       renderTabs();
       renderContent();
       updateProgress();
       setSyncStatus('ok','✓ Synced — '+new Date().toLocaleTimeString());
-    } else { setSyncStatus('error','No data found'); }
-  } catch(e) { setSyncStatus('error','Sync failed: '+e.message); }
+    } else {
+      setSyncStatus('error','No data found in database');
+    }
+  } catch(e) {
+    setSyncStatus('error','Sync failed: '+e.message);
+    // Fall back to local on network error
+    try {
+      const saved = localStorage.getItem('relisto_hub_state');
+      if (saved) {
+        const p = JSON.parse(saved);
+        allState = p.allState||{};
+        allCustom = p.allCustom||{};
+        userChecklists = p.userChecklists||[];
+        initAllState();
+        renderTabs();
+        renderContent();
+        updateProgress();
+        setSyncStatus('error','Offline — showing last saved data');
+      }
+    } catch(e2){}
+  }
 }
 
 async function saveToBin() {
   saveLocal();
   if (!apiKey || !binId) return;
+  setSyncStatus('loading', 'Saving…');
   try {
-    await fetch('https://api.jsonbin.io/v3/b/'+binId, {
+    const r = await fetch('https://api.jsonbin.io/v3/b/'+binId, {
       method:'PUT',
       headers:{ 'Content-Type':'application/json', 'X-Master-Key':apiKey },
       body: JSON.stringify(payload())
     });
-    setSyncStatus('ok','✓ Saved — '+new Date().toLocaleTimeString());
-  } catch(e) { setSyncStatus('error','Save failed: '+e.message); }
+    if (r.ok) {
+      setSyncStatus('ok','✓ Saved — '+new Date().toLocaleTimeString());
+    } else {
+      const err = await r.json();
+      setSyncStatus('error','Save failed: '+(err.message||r.status));
+    }
+  } catch(e) {
+    setSyncStatus('error','Save failed: '+e.message);
+  }
 }
 
 function saveLocal() {
@@ -1699,23 +1729,71 @@ document.getElementById('toolbar').style.display = 'none'; // hidden on dashboar
 
 /* ── BOOT ─────────────────────────────────────────────────────── */
 initAllState();
-// Load local state first
-try {
-  const saved = localStorage.getItem('relisto_hub_state');
-  if (saved) { const p=JSON.parse(saved); allState=p.allState||{}; allCustom=p.allCustom||{}; userChecklists=p.userChecklists||[]; initAllState(); }
-} catch(e){}
-
+// Show empty state immediately so page renders fast
 renderTabs();
 renderContent();
 updateProgress();
 
-// Auto-connect
+// Auto-connect — always pull from DB first, local state is only fallback
 if (MASTER_KEY && MASTER_KEY !== 'YOUR_MASTER_KEY_HERE') {
   const savedBin = localStorage.getItem(storageKey());
-  if (savedBin) { binId=savedBin; loadFromBin(); }
-  else { createBin(); }
+  if (savedBin) {
+    binId = savedBin;
+    setSyncStatus('loading', 'Loading latest data…');
+    // Always load from DB on startup — never use local as primary
+    loadFromBin();
+  } else {
+    // First time — load local if any, then create bin
+    try {
+      const saved = localStorage.getItem('relisto_hub_state');
+      if (saved) { const p=JSON.parse(saved); allState=p.allState||{}; allCustom=p.allCustom||{}; userChecklists=p.userChecklists||[]; initAllState(); renderTabs(); renderContent(); updateProgress(); }
+    } catch(e){}
+    createBin();
+  }
 } else {
+  // No master key — fall back to local
+  try {
+    const saved = localStorage.getItem('relisto_hub_state');
+    if (saved) { const p=JSON.parse(saved); allState=p.allState||{}; allCustom=p.allCustom||{}; userChecklists=p.userChecklists||[]; initAllState(); renderTabs(); renderContent(); updateProgress(); }
+  } catch(e){}
   setSyncStatus('error','No Master Key — open file and replace YOUR_MASTER_KEY_HERE');
+}
+
+// Auto-poll every 30 seconds for changes from other users
+setInterval(() => {
+  if (binId && apiKey && !syncTimer) {
+    silentPoll();
+  }
+}, 30000);
+
+async function silentPoll() {
+  try {
+    const r = await fetch('https://api.jsonbin.io/v3/b/'+binId+'/latest', {
+      headers:{ 'X-Master-Key': apiKey }
+    });
+    const d = await r.json();
+    if (!d.record?.allState) return;
+
+    // Check if remote data is different from local
+    const remoteStr = JSON.stringify(d.record.allState) + JSON.stringify(d.record.allCustom||{});
+    const localStr  = JSON.stringify(allState) + JSON.stringify(allCustom);
+
+    if (remoteStr !== localStr) {
+      // Remote has changes — sync in
+      syncTextareas();
+      allState = d.record.allState;
+      allCustom = d.record.allCustom || {};
+      userChecklists = d.record.userChecklists || [];
+      initAllState();
+      renderTabs();
+      renderContent();
+      updateProgress();
+      setSyncStatus('ok', '✓ Updated — ' + new Date().toLocaleTimeString());
+      showToast('🔄 Form updated by another user');
+    }
+  } catch(e) {
+    // Silent fail — don't show error for background polls
+  }
 }
 </script>
 </body>
