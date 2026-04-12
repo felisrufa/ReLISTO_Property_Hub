@@ -42,19 +42,25 @@ header{background:var(--charcoal);padding:0;position:sticky;top:0;z-index:100;bo
 .sync-dot.loading{background:var(--charcoal);animation:pulse 0.8s infinite;}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
 
-/* ── TAB BAR ── */
-.tab-bar{background:#fff;border-bottom:2px solid var(--border);padding:0 32px;display:flex;align-items:flex-end;gap:0;overflow-x:auto;position:sticky;top:57px;z-index:90;}
-.tab{font-size:12px;font-weight:700;padding:12px 18px;border:none;background:none;color:var(--muted);cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px;white-space:nowrap;transition:all 0.15s;letter-spacing:0.3px;display:flex;align-items:center;gap:7px;}
-.tab:hover{color:var(--ink);}
-.tab.active{color:var(--charcoal);border-bottom-color:var(--lime);}
-.tab .tab-pct{font-size:10px;background:var(--border);color:var(--muted);padding:2px 6px;border-radius:10px;font-weight:700;}
-.tab.active .tab-pct{background:var(--lime);color:var(--charcoal);}
-.tab-dashboard{color:var(--charcoal);font-weight:800;}
-.tab-add{color:var(--lime);border:1.5px dashed var(--lime);border-radius:5px;margin:6px 0 6px 8px;padding:5px 12px;font-size:11px;}
-.tab-add:hover{background:var(--lime);color:var(--charcoal);border-style:solid;}
+/* ── NAV BAR (replaces tab bar) ── */
+.nav-bar{background:#fff;border-bottom:2px solid var(--border);padding:8px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;position:sticky;top:57px;z-index:90;flex-wrap:wrap;}
+.nav-left{display:flex;align-items:center;gap:8px;flex:1;min-width:0;}
+.nav-right{display:flex;align-items:center;gap:6px;flex-shrink:0;}
+.nav-dash-btn{display:flex;align-items:center;gap:6px;padding:8px 14px;border-radius:8px;border:2px solid var(--border);background:#fff;color:var(--muted);cursor:pointer;font-family:'Nunito Sans',sans-serif;font-size:13px;font-weight:700;transition:all 0.15s;white-space:nowrap;flex-shrink:0;}
+.nav-dash-btn:hover{border-color:var(--lime);color:var(--charcoal);}
+.nav-dash-btn.active{background:var(--charcoal);color:#fff;border-color:var(--charcoal);}
+.nav-icon{font-size:15px;}
+.nav-select-wrap{flex:1;min-width:0;position:relative;}
+.nav-select{font-family:'Nunito Sans',sans-serif;font-size:13px;font-weight:700;color:var(--ink);background:#fff;border:2px solid var(--border);border-radius:8px;padding:8px 36px 8px 12px;width:100%;cursor:pointer;appearance:none;-webkit-appearance:none;outline:none;transition:border-color 0.15s;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23777' d='M6 8L1 3h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;}
+.nav-select:focus{border-color:var(--lime);}
+.nav-select.active-cl{border-color:var(--lime);background-color:var(--done-bg);}
+.nav-add-btn{padding:8px 14px;border-radius:8px;border:2px dashed var(--lime);background:#fff;color:var(--lime);cursor:pointer;font-family:'Nunito Sans',sans-serif;font-size:12px;font-weight:800;transition:all 0.15s;white-space:nowrap;}
+.nav-add-btn:hover{background:var(--lime);color:var(--charcoal);border-style:solid;}
 
 /* ── TOOLBAR ── */
-.toolbar{padding:10px 32px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;border-bottom:1px solid var(--border);background:var(--off-white);}
+.toolbar{padding:8px 16px;display:flex;flex-direction:column;gap:6px;border-bottom:1px solid var(--border);background:var(--off-white);}
+.toolbar-primary{display:flex;gap:6px;flex-wrap:wrap;}
+.toolbar-secondary{display:flex;gap:6px;flex-wrap:wrap;}
 .btn{font-family:'Nunito Sans',sans-serif;font-size:11px;font-weight:700;padding:6px 13px;border-radius:4px;border:1.5px solid var(--border);background:#fff;color:var(--ink);cursor:pointer;letter-spacing:0.5px;text-transform:uppercase;transition:all 0.15s;white-space:nowrap;}
 .btn:hover{background:var(--charcoal);color:#fff;border-color:var(--charcoal);}
 .btn.primary{background:var(--lime);color:var(--charcoal);border-color:var(--lime);}
@@ -94,7 +100,7 @@ header{background:var(--charcoal);padding:0;position:sticky;top:0;z-index:100;bo
 
 /* ── DATE CARDS ── */
 .date-row{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:11px;padding-left:29px;}
-.date-card{display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:9px;padding:8px 13px;min-width:100px;border:2px solid var(--border);background:#fff;gap:3px;transition:box-shadow 0.15s,border-color 0.15s;}
+.date-card{display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:9px;padding:10px 14px;min-width:100px;min-height:72px;border:2px solid var(--border);background:#fff;gap:3px;transition:box-shadow 0.15s,border-color 0.15s;-webkit-tap-highlight-color:transparent;}
 .date-card:hover{box-shadow:0 2px 8px rgba(0,0,0,0.08);}
 .date-card.start-card{border-color:#b3d4e8;background:#f0f7fc;}
 .date-card.start-card.active{border-color:#2471a3;background:#daeaf7;}
@@ -102,11 +108,11 @@ header{background:var(--charcoal);padding:0;position:sticky;top:0;z-index:100;bo
 .date-card.due-card.active{border-color:#e08020;}
 .date-card.done-card{border-color:#c8dfa0;background:#f5fbe8;}
 .date-card.done-card.active{border-color:var(--lime);background:var(--done-bg);}
-.date-card.tappable{cursor:pointer;border-style:dashed;}
+.date-card.tappable{cursor:pointer;border-style:dashed;min-height:76px;}
 .date-card.tappable:hover{border-style:solid;}
 .date-card.start-card.tappable:hover{border-color:#2471a3;background:#daeaf7;}
 .date-card.done-card.tappable:hover{border-color:var(--lime);background:var(--done-bg);}
-.dc-icon{font-size:16px;line-height:1;}
+.dc-icon{font-size:20px;line-height:1;}
 .dc-lbl{font-size:9px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);}
 .date-card.start-card .dc-lbl{color:#2471a3;}
 .date-card.due-card .dc-lbl{color:#b06a00;}
@@ -189,16 +195,39 @@ header{background:var(--charcoal);padding:0;position:sticky;top:0;z-index:100;bo
 .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--charcoal);color:#fff;padding:9px 20px;border-radius:6px;font-size:13px;font-weight:600;z-index:999;box-shadow:0 4px 16px rgba(0,0,0,0.25);}
 #nickInput:focus{border-color:var(--lime)!important;}
 
-@media(max-width:620px){
-  .header-inner,.sync-bar,.toolbar,.legend{padding-left:12px;padding-right:12px;}
-  .tab-bar{padding:0 8px;}
-  .main,.dashboard{margin:12px auto;}
+@media(max-width:700px){
+  .header-inner{padding:10px 14px;gap:10px;}
+  .header-title{font-size:12px;}
+  .progress-bar{width:100px;}
+  .sync-bar{padding:5px 14px;font-size:10px;}
+  .nav-bar{padding:8px 12px;top:52px;}
+  .nav-dash-btn .nav-label{display:none;}
+  .nav-dash-btn{padding:8px 10px;}
+  .toolbar{padding:8px 12px;}
+  .legend{padding:6px 12px;gap:10px;}
+  .legend-item{font-size:10px;}
+  .main,.dashboard{margin:10px auto;padding:0 10px;}
   .task-row{padding:12px 12px;}
-  .section-header{padding:12px 12px;}
-  .date-row,.notes-area{padding-left:0;}
-  .modal{padding:18px 12px;}
-  .tl-label{width:110px;}
-  .chart-axis{margin-left:120px;}
+  .section-header{padding:12px 14px;}
+  .date-row{padding-left:0;gap:6px;}
+  .notes-area{padding-left:0;}
+  .date-card{min-width:88px;padding:8px 10px;}
+  .dc-lbl{font-size:8px;}
+  .dc-val{font-size:11px;}
+  .dc-hint{font-size:9px;}
+  .task-label{font-size:13px;}
+  .modal{padding:16px 12px;max-height:95vh;}
+  .modal h2{font-size:16px;}
+  .tl-label{width:100px;}
+  .chart-axis{margin-left:110px;}
+  .dash-grid{grid-template-columns:1fr 1fr;gap:10px;}
+  .dash-card{padding:14px;}
+  .dash-card-pct{font-size:16px;}
+  .btn{font-size:11px;padding:7px 11px;}
+  .notes-input{font-size:13px;}
+  .add-task-input{font-size:13px;}
+  .sec-title{font-size:13px;}
+  .dc-input-wrap input[type=date]{font-size:11px;width:95px;}
 }
 </style>
 </head>
@@ -224,23 +253,38 @@ header{background:var(--charcoal);padding:0;position:sticky;top:0;z-index:100;bo
   </div>
 </header>
 
-<!-- Tab Bar -->
-<div class="tab-bar" id="tabBar">
-  <button class="tab tab-dashboard active" onclick="switchTab('__dashboard__')">📊 Dashboard</button>
-  <!-- checklist tabs injected here -->
-  <button class="tab tab-add" onclick="openNewChecklistModal()">+ New Checklist</button>
+<!-- Mobile-friendly nav bar -->
+<div class="nav-bar" id="navBar">
+  <div class="nav-left">
+    <button class="nav-dash-btn active" id="dashBtn" onclick="switchTab('__dashboard__')">
+      <span class="nav-icon">📊</span>
+      <span class="nav-label">Dashboard</span>
+    </button>
+    <div class="nav-select-wrap">
+      <select class="nav-select" id="checklistSelect" onchange="switchTab(this.value)">
+        <option value="__placeholder__" disabled>Select Checklist…</option>
+      </select>
+    </div>
+  </div>
+  <div class="nav-right">
+    <button class="nav-add-btn" onclick="openNewChecklistModal()" title="New Checklist">+ New</button>
+  </div>
 </div>
 
-<!-- Toolbar -->
+<!-- Mobile toolbar -->
 <div class="toolbar" id="toolbar">
-  <button class="btn primary" onclick="openModal('timeline')">📊 Timeline</button>
-  <button class="btn primary" onclick="openModal('report')">📋 Report</button>
-  <button class="btn primary" onclick="openModal('log')">📜 Activity Log</button>
-  <button class="btn" onclick="expandAll()">Expand All</button>
-  <button class="btn" onclick="collapseAll()">Collapse All</button>
-  <button class="btn" onclick="syncNow()">☁ Sync</button>
-  <button class="btn accent" onclick="showBinInfo()">🔗 Share URL</button>
-  <button class="btn" onclick="exportCSV()">⬇ CSV</button>
+  <div class="toolbar-primary">
+    <button class="btn primary" onclick="openModal('timeline')">📊 Timeline</button>
+    <button class="btn primary" onclick="openModal('report')">📋 Report</button>
+    <button class="btn primary" onclick="openModal('log')">📜 Log</button>
+  </div>
+  <div class="toolbar-secondary">
+    <button class="btn" onclick="expandAll()">Expand All</button>
+    <button class="btn" onclick="collapseAll()">Collapse All</button>
+    <button class="btn" onclick="syncNow()">☁ Sync</button>
+    <button class="btn accent" onclick="showBinInfo()">🔗 Share</button>
+    <button class="btn" onclick="exportCSV()">⬇ CSV</button>
+  </div>
 </div>
 
 <!-- Legend -->
@@ -276,7 +320,7 @@ header{background:var(--charcoal);padding:0;position:sticky;top:0;z-index:100;bo
 
 <script>
 /* ── CONFIG ─────────────────────────────────────────────────── */
-const MASTER_KEY       = '$2a$10$.9Ak8CqZcCO.LhCDVKruZeGOOQGVIes8gzUqnWvFq0YXdIqzfYfiq';
+const MASTER_KEY       = 'YOUR_MASTER_KEY_HERE';
 const DEFAULT_PROPERTY = 'ReLISTO';
 const HARDCODED_BIN_ID = '69d91dd1aaba882197e525bd';
 /* ─────────────────────────────────────────────────────────────── */
@@ -1028,32 +1072,44 @@ function initAllState() {
 
 /* ── TABS ─────────────────────────────────────────────────────────── */
 function renderTabs() {
-  const bar = document.getElementById('tabBar');
-  // Remove all except dashboard and add-button
-  [...bar.querySelectorAll('.tab:not(.tab-dashboard):not(.tab-add)')].forEach(t=>t.remove());
-  const addBtn = bar.querySelector('.tab-add');
+  const sel = document.getElementById('checklistSelect');
+  const dashBtn = document.getElementById('dashBtn');
+
+  // Rebuild select options
+  sel.innerHTML = '<option value="__placeholder__" disabled>Select Checklist…</option>';
 
   getAllChecklistNames().forEach(clName => {
     const pct = getChecklistPct(clName);
     const icon = BUILT_IN_CHECKLISTS[clName]?.icon || '📋';
-    const btn = document.createElement('button');
-    btn.className = 'tab' + (activeTab === clName ? ' active' : '');
-    btn.innerHTML = `${icon} ${clName} <span class="tab-pct">${pct}%</span>`;
-    btn.onclick = () => switchTab(clName);
-    bar.insertBefore(btn, addBtn);
+    const opt = document.createElement('option');
+    opt.value = clName;
+    opt.textContent = `${icon} ${clName} — ${pct}%`;
+    if (activeTab === clName) opt.selected = true;
+    sel.appendChild(opt);
   });
 
-  // Dashboard tab active state
-  bar.querySelector('.tab-dashboard').classList.toggle('active', activeTab === '__dashboard__');
+  // Update active states
+  const onDash = activeTab === '__dashboard__';
+  dashBtn.classList.toggle('active', onDash);
+  sel.classList.toggle('active-cl', !onDash);
+
+  if (!onDash) {
+    sel.value = activeTab;
+  } else {
+    sel.value = '__placeholder__';
+  }
 }
 
 function switchTab(name) {
+  if (name === '__placeholder__') return;
   syncTextareas();
   activeTab = name;
   renderTabs();
   renderContent();
   const toolbar = document.getElementById('toolbar');
   toolbar.style.display = name === '__dashboard__' ? 'none' : 'flex';
+  // Scroll to top on mobile when switching
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 /* ── CONTENT RENDER ─────────────────────────────────────────────── */
