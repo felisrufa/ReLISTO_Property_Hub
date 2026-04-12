@@ -187,6 +187,7 @@ header{background:var(--charcoal);padding:0;position:sticky;top:0;z-index:100;bo
 
 /* ── TOAST ── */
 .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--charcoal);color:#fff;padding:9px 20px;border-radius:6px;font-size:13px;font-weight:600;z-index:999;box-shadow:0 4px 16px rgba(0,0,0,0.25);}
+#nickInput:focus{border-color:var(--lime)!important;}
 
 @media(max-width:620px){
   .header-inner,.sync-bar,.toolbar,.legend{padding-left:12px;padding-right:12px;}
@@ -234,6 +235,7 @@ header{background:var(--charcoal);padding:0;position:sticky;top:0;z-index:100;bo
 <div class="toolbar" id="toolbar">
   <button class="btn primary" onclick="openModal('timeline')">📊 Timeline</button>
   <button class="btn primary" onclick="openModal('report')">📋 Report</button>
+  <button class="btn primary" onclick="openModal('log')">📜 Activity Log</button>
   <button class="btn" onclick="expandAll()">Expand All</button>
   <button class="btn" onclick="collapseAll()">Collapse All</button>
   <button class="btn" onclick="syncNow()">☁ Sync</button>
@@ -970,6 +972,7 @@ const BUILT_IN_CHECKLISTS = {
 let allState = {};       // { checklistName: { sectionId_taskIdx: { done, startDate, dueDate, doneDate, instr, fieldNotes } } }
 let allCustom = {};      // { checklistName: { sectionId: [{label}] } }
 let userChecklists = []; // custom checklist names added by user
+let activityLog = [];    // [{ts, user, checklist, task, action, detail}]
 let activeTab = '__dashboard__';
 let binId = '';
 let syncTimer = null;
@@ -1225,6 +1228,21 @@ function getChecklistPct(clName) {
 }
 
 /* ── STATE MUTATIONS ─────────────────────────────────────────────── */
+function getTaskLabel(clName, key) {
+  // Extract human-readable task label from key
+  const secs = getSections(clName);
+  for (const sec of secs) {
+    sec.tasks.forEach((task, ti) => {
+      if (sec.id + '_t' + ti === key) { getTaskLabel._result = task.t; }
+    });
+    const cu = customFor(clName);
+    (cu[sec.id]||[]).forEach((ct, ci) => {
+      if (sec.id + '_custom' + ci === key) { getTaskLabel._result = ct.label; }
+    });
+  }
+  return getTaskLabel._result || key;
+}
+
 function refreshDateRow(clName, key, field) {
   // Find the task row by looking for a checkbox tied to this key
   // and rebuild only its date-row div
@@ -1272,10 +1290,47 @@ function updateTabPct(clName) {
   if (activeTab === '__dashboard__') renderContent();
 }
 
+/* ── ACTIVITY LOG ─────────────────────────────────────────────── */
+function getUser() {
+  // Use a stored nickname or fall back to browser fingerprint
+  let nick = localStorage.getItem('relisto_user_nick');
+  if (!nick) {
+    nick = 'User-' + Math.random().toString(36).substr(2,5).toUpperCase();
+    localStorage.setItem('relisto_user_nick', nick);
+  }
+  return nick;
+}
+
+function logActivity(checklist, taskLabel, action, detail) {
+  const entry = {
+    ts: new Date().toISOString(),
+    user: getUser(),
+    checklist,
+    task: taskLabel,
+    action,
+    detail: detail || ''
+  };
+  activityLog.unshift(entry); // newest first
+  if (activityLog.length > 200) activityLog = activityLog.slice(0, 200); // cap at 200
+}
+
+function formatLogTime(isoStr) {
+  const d = new Date(isoStr);
+  return d.toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' }) +
+    ' ' + d.toLocaleTimeString('en-US', { hour:'numeric', minute:'2-digit', hour12:true });
+}
+
 function updateF(clName, key, field, val) {
   const st = stateFor(clName);
   if (!st[key]) st[key] = { done:false, startDate:'', dueDate:'', doneDate:'', instr:'', fieldNotes:'' };
   st[key][field] = val;
+  // Log meaningful changes
+  const taskLabel = getTaskLabel(clName, key);
+  if (field === 'dueDate')    logActivity(clName, taskLabel, 'Set due date', val);
+  if (field === 'startDate')  logActivity(clName, taskLabel, 'Started task', val);
+  if (field === 'doneDate')   logActivity(clName, taskLabel, 'Set done date', val);
+  if (field === 'fieldNotes' && val.trim()) logActivity(clName, taskLabel, 'Updated field notes', '');
+  if (field === 'instr' && val.trim())      logActivity(clName, taskLabel, 'Updated instructions', '');
   if (field === 'dueDate' || field === 'doneDate' || field === 'startDate') {
     refreshDateRow(clName, key, field);
     updateTabPct(clName);
@@ -1290,7 +1345,12 @@ function stampF(clName, key, field) {
   const st = stateFor(clName);
   if (!st[key]) st[key] = { done:false, startDate:'', dueDate:'', doneDate:'', instr:'', fieldNotes:'' };
   st[key][field] = today;
-  if (field === 'doneDate') st[key].done = true;
+  const taskLabel = getTaskLabel(clName, key);
+  if (field === 'doneDate') {
+    st[key].done = true;
+    logActivity(clName, taskLabel, 'Marked complete', today);
+  }
+  if (field === 'startDate') logActivity(clName, taskLabel, 'Started task', today);
   // Rebuild just the date-row for this task
   refreshDateRow(clName, key, field);
   if (field === 'doneDate') {
@@ -1316,6 +1376,8 @@ function toggleF(clName, key, checked) {
   const st = stateFor(clName);
   if (!st[key]) st[key] = { done:false, startDate:'', dueDate:'', doneDate:'', instr:'', fieldNotes:'' };
   st[key].done = checked;
+  const taskLabel = getTaskLabel(clName, key);
+  logActivity(clName, taskLabel, checked ? 'Checked complete' : 'Unchecked', '');
   // Update row class without full re-render
   const cb = document.querySelector(`input[onchange*="toggleF('${clName}','${key}"]`);
   if (cb) {
@@ -1468,7 +1530,7 @@ function scheduleSave() {
 }
 
 function payload() {
-  return { allState, allCustom, userChecklists, property: connectedProperty, version:2, updatedAt: new Date().toISOString() };
+  return { allState, allCustom, userChecklists, activityLog, property: connectedProperty, version:2, updatedAt: new Date().toISOString() };
 }
 
 async function createBin() {
@@ -1500,6 +1562,7 @@ async function loadFromBin() {
       allState = d.record.allState;
       allCustom = d.record.allCustom || {};
       userChecklists = d.record.userChecklists || [];
+      activityLog = d.record.activityLog || [];
       // Save to local as backup
       saveLocal();
       initAllState();
@@ -1583,9 +1646,12 @@ function syncTextareas() {
 let currentModalType = 'timeline';
 function openModal(type) {
   currentModalType = type;
-  document.getElementById('modalTitle').textContent = type === 'timeline' ? 'Timeline' : 'Report';
+  const titles = { timeline:'Timeline', report:'Report', log:'Activity Log' };
+  document.getElementById('modalTitle').textContent = titles[type] || type;
   document.getElementById('modalBg').classList.add('open');
-  type === 'timeline' ? renderTimeline() : renderReport();
+  if (type === 'timeline') renderTimeline();
+  else if (type === 'report') renderReport();
+  else renderActivityLog();
 }
 function closeModal() { document.getElementById('modalBg').classList.remove('open'); }
 
@@ -1698,6 +1764,93 @@ function renderReport() {
   wrap.innerHTML = html;
 }
 
+/* ── ACTIVITY LOG RENDER ────────────────────────────────────────── */
+function renderActivityLog() {
+  const wrap = document.getElementById('modalContent');
+
+  // Allow user to set their display name
+  const currentNick = getUser();
+
+  let html = `
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px;padding:12px 14px;background:var(--off-white);border-radius:8px;border:1.5px solid var(--border)">
+      <span style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;white-space:nowrap">Your display name:</span>
+      <input type="text" id="nickInput" value="${currentNick}" style="font-family:'Nunito Sans',sans-serif;font-size:13px;border:1.5px solid var(--border);border-radius:5px;padding:5px 10px;flex:1;max-width:200px;color:var(--ink);outline:none;">
+      <button class="btn primary" onclick="saveNick()" style="padding:5px 12px">Save Name</button>
+    </div>`;
+
+  if (!activityLog.length) {
+    html += '<div class="no-data">No activity recorded yet. Changes will appear here as the team works.</div>';
+    wrap.innerHTML = html;
+    return;
+  }
+
+  // Group by date
+  const groups = {};
+  activityLog.forEach(entry => {
+    const date = new Date(entry.ts).toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric', year:'numeric' });
+    if (!groups[date]) groups[date] = [];
+    groups[date].push(entry);
+  });
+
+  const actionColors = {
+    'Marked complete':     '#2d6a4f',
+    'Checked complete':    '#2d6a4f',
+    'Started task':        '#2471a3',
+    'Set due date':        '#b06a00',
+    'Set done date':       '#2d6a4f',
+    'Unchecked':           '#c0392b',
+    'Updated field notes': '#555552',
+    'Updated instructions':'#555552',
+  };
+
+  Object.entries(groups).forEach(([date, entries]) => {
+    html += `<div style="font-size:11px;font-weight:800;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;margin:16px 0 8px;padding-bottom:5px;border-bottom:1px solid var(--border)">${date}</div>`;
+    entries.forEach(e => {
+      const color = actionColors[e.action] || 'var(--charcoal)';
+      const time = new Date(e.ts).toLocaleTimeString('en-US', { hour:'numeric', minute:'2-digit', hour12:true });
+      html += `
+        <div style="display:flex;gap:10px;align-items:flex-start;padding:8px 10px;border-radius:6px;margin-bottom:4px;background:#fff;border:1px solid var(--border)">
+          <div style="font-size:10px;color:var(--muted);white-space:nowrap;padding-top:2px;min-width:60px">${time}</div>
+          <div style="flex:1;min-width:0">
+            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:2px">
+              <span style="font-size:11px;font-weight:800;background:var(--off-white);border:1px solid var(--border);padding:1px 7px;border-radius:10px;color:var(--charcoal)">${e.user}</span>
+              <span style="font-size:11px;font-weight:700;color:${color}">${e.action}</span>
+              ${e.detail ? `<span style="font-size:11px;color:var(--muted)">${e.detail}</span>` : ''}
+            </div>
+            <div style="font-size:12px;color:var(--ink);line-height:1.4"><span style="color:var(--lime);font-weight:700">${e.checklist}</span> — ${e.task}</div>
+          </div>
+        </div>`;
+    });
+  });
+
+  // Export log button
+  html += `<div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--border)">
+    <button class="btn" onclick="exportLog()" style="font-size:11px">⬇ Export Activity Log</button>
+  </div>`;
+
+  wrap.innerHTML = html;
+}
+
+function saveNick() {
+  const val = document.getElementById('nickInput').value.trim();
+  if (val) {
+    localStorage.setItem('relisto_user_nick', val);
+    showToast('✓ Display name saved: ' + val);
+  }
+}
+
+function exportLog() {
+  let csv = 'Date/Time,User,Checklist,Task,Action,Detail\n';
+  activityLog.forEach(e => {
+    const esc = v => (v||'').replace(/"/g,'""');
+    csv += `"${formatLogTime(e.ts)}","${esc(e.user)}","${esc(e.checklist)}","${esc(e.task)}","${esc(e.action)}","${esc(e.detail)}"\n`;
+  });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download = 'relisto_activity_log.csv';
+  a.click();
+}
+
 /* ── CSV EXPORT ─────────────────────────────────────────────────── */
 function exportCSV() {
   syncTextareas();
@@ -1769,6 +1922,7 @@ async function silentPoll() {
       allState = d.record.allState;
       allCustom = d.record.allCustom || {};
       userChecklists = d.record.userChecklists || [];
+      activityLog = d.record.activityLog || [];
       initAllState();
       renderTabs();
       renderContent();
