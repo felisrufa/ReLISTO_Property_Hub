@@ -277,6 +277,7 @@ header{background:var(--charcoal);padding:0;position:sticky;top:0;z-index:100;bo
     <button class="btn primary" onclick="openModal('timeline')">📊 Timeline</button>
     <button class="btn primary" onclick="openModal('report')">📋 Report</button>
     <button class="btn primary" onclick="openModal('log')">📜 Log</button>
+    <button class="btn primary" onclick="openSnapshotModal()">📸 Snapshots</button>
   </div>
   <div class="toolbar-secondary">
     <button class="btn" onclick="expandAll()">Expand All</button>
@@ -304,6 +305,15 @@ header{background:var(--charcoal);padding:0;position:sticky;top:0;z-index:100;bo
     <button class="modal-close" onclick="closeModal()">✕</button>
     <h2 id="modalTitle">Timeline</h2>
     <div id="modalContent"></div>
+  </div>
+</div>
+
+<!-- Snapshot Modal -->
+<div class="modal-bg" id="snapshotBg">
+  <div class="modal" style="max-width:700px">
+    <button class="modal-close" onclick="closeSnapshotModal()">✕</button>
+    <h2>📸 Snapshots</h2>
+    <div id="snapshotContent"></div>
   </div>
 </div>
 
@@ -1017,6 +1027,7 @@ let allState = {};       // { checklistName: { sectionId_taskIdx: { done, startD
 let allCustom = {};      // { checklistName: { sectionId: [{label}] } }
 let userChecklists = []; // custom checklist names added by user
 let activityLog = [];    // [{ts, user, checklist, task, action, detail}]
+let snapshots = [];      // [{ts, label, allState, allCustom, userChecklists}] — daily backups
 let activeTab = '__dashboard__';
 let binId = '';
 let syncTimer = null;
@@ -1367,7 +1378,7 @@ function logActivity(checklist, taskLabel, action, detail) {
     detail: detail || ''
   };
   activityLog.unshift(entry); // newest first
-  if (activityLog.length > 200) activityLog = activityLog.slice(0, 200); // cap at 200
+  if (activityLog.length > 1000) activityLog = activityLog.slice(0, 1000); // cap at 1000
 }
 
 function formatLogTime(isoStr) {
@@ -1586,7 +1597,7 @@ function scheduleSave() {
 }
 
 function payload() {
-  return { allState, allCustom, userChecklists, activityLog, property: connectedProperty, version:2, updatedAt: new Date().toISOString() };
+  return { allState, allCustom, userChecklists, activityLog, snapshots, property: connectedProperty, version:2, updatedAt: new Date().toISOString() };
 }
 
 async function createBin() {
@@ -1619,6 +1630,7 @@ async function loadFromBin() {
       allCustom = d.record.allCustom || {};
       userChecklists = d.record.userChecklists || [];
       activityLog = d.record.activityLog || [];
+      snapshots = d.record.snapshots || [];
       // Save to local as backup
       saveLocal();
       initAllState();
@@ -1654,20 +1666,143 @@ async function saveToBin() {
   if (!apiKey || !binId) return;
   setSyncStatus('loading', 'Saving…');
   try {
-    const r = await fetch('https://api.jsonbin.io/v3/b/'+binId, {
-      method:'PUT',
-      headers:{ 'Content-Type':'application/json', 'X-Master-Key':apiKey },
-      body: JSON.stringify(payload())
+    // STEP 1: Pull latest from database
+    const getR = await fetch('https://api.jsonbin.io/v3/b/'+binId+'/latest', {
+      headers:{ 'X-Master-Key': apiKey }
     });
-    if (r.ok) {
-      setSyncStatus('ok','✓ Saved — '+new Date().toLocaleTimeString());
+    const getD = await getR.json();
+
+    // STEP 2: Merge — remote is base, local changes applied on top
+    let mergedState = {};
+    let mergedCustom = {};
+    let mergedLog = [];
+    let mergedChecklists = userChecklists;
+
+    if (getD.record?.allState) {
+      // Deep merge: for each key, take the most recently modified value
+      mergedState = deepMergeState(getD.record.allState, allState);
+      mergedCustom = mergeCustom(getD.record.allCustom||{}, allCustom);
+      mergedLog = mergeLog(getD.record.activityLog||[], activityLog);
+      // Merge custom checklist names
+      const remoteNames = getD.record.userChecklists || [];
+      mergedChecklists = [...new Set([...remoteNames, ...userChecklists])];
     } else {
-      const err = await r.json();
-      setSyncStatus('error','Save failed: '+(err.message||r.status));
+      mergedState = allState;
+      mergedCustom = allCustom;
+      mergedLog = activityLog;
+    }
+
+    // STEP 3: Update local state with merged result
+    allState = mergedState;
+    allCustom = mergedCustom;
+    activityLog = mergedLog;
+    userChecklists = mergedChecklists;
+
+    // STEP 3.5: Take a daily snapshot if none exists for today
+    takeSnapshotIfNeeded();
+
+    // STEP 4: Write merged state back to database
+    const putR = await fetch('https://api.jsonbin.io/v3/b/'+binId, {
+      method: 'PUT',
+      headers:{ 'Content-Type':'application/json', 'X-Master-Key':apiKey },
+      body: JSON.stringify({
+        allState: mergedState,
+        allCustom: mergedCustom,
+        userChecklists: mergedChecklists,
+        activityLog: mergedLog,
+        property: connectedProperty,
+        version: 2,
+        updatedAt: new Date().toISOString()
+      })
+    });
+
+    if (putR.ok) {
+      saveLocal();
+      setSyncStatus('ok', '✓ Saved — ' + new Date().toLocaleTimeString());
+    } else {
+      const err = await putR.json();
+      setSyncStatus('error', 'Save failed: '+(err.message||putR.status));
     }
   } catch(e) {
-    setSyncStatus('error','Save failed: '+e.message);
+    setSyncStatus('error', 'Save failed: '+e.message);
   }
+}
+
+// Deep merge two state objects — for each task key, take the one with more data
+function deepMergeState(remote, local) {
+  const merged = Object.assign({}, remote);
+  for (const clName in local) {
+    if (!merged[clName]) {
+      merged[clName] = local[clName];
+      continue;
+    }
+    merged[clName] = Object.assign({}, remote[clName]);
+    for (const key in local[clName]) {
+      const r = remote[clName]?.[key] || {};
+      const l = local[clName][key] || {};
+      // Merge each task — prefer whichever has more filled fields
+      // For done: true wins over false
+      // For dates: non-empty wins over empty
+      // For text: longer/more recent wins
+      merged[clName][key] = {
+        done:        l.done || r.done || false,
+        startDate:   pickBest(l.startDate, r.startDate),
+        dueDate:     pickBest(l.dueDate, r.dueDate),
+        doneDate:    pickBest(l.doneDate, r.doneDate),
+        instr:       pickLonger(l.instr, r.instr),
+        fieldNotes:  pickLonger(l.fieldNotes, r.fieldNotes),
+      };
+    }
+  }
+  return merged;
+}
+
+function pickBest(a, b) {
+  // Non-empty wins over empty; if both non-empty, take the more recent (larger) date string
+  if (!a && !b) return '';
+  if (a && !b) return a;
+  if (!a && b) return b;
+  return a > b ? a : b; // lexicographic works for ISO dates
+}
+
+function pickLonger(a, b) {
+  // Prefer the longer, more detailed text
+  const as = (a||'').trim();
+  const bs = (b||'').trim();
+  if (!as && !bs) return '';
+  if (as.length >= bs.length) return as;
+  return bs;
+}
+
+function mergeCustom(remote, local) {
+  const merged = Object.assign({}, remote);
+  for (const clName in local) {
+    if (!merged[clName]) merged[clName] = {};
+    for (const secId in local[clName]) {
+      if (!merged[clName][secId]) merged[clName][secId] = [];
+      // Add any custom tasks from local that aren't in remote
+      const remoteLabels = (merged[clName][secId]||[]).map(t=>t.label);
+      (local[clName][secId]||[]).forEach(ct => {
+        if (!remoteLabels.includes(ct.label)) merged[clName][secId].push(ct);
+      });
+    }
+  }
+  return merged;
+}
+
+function mergeLog(remoteLog, localLog) {
+  // Combine both logs, deduplicate by timestamp+user+action, keep newest 200
+  const all = [...remoteLog, ...localLog];
+  const seen = new Set();
+  const deduped = all.filter(e => {
+    const key = e.ts + e.user + e.action + e.task;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+  // Sort newest first
+  deduped.sort((a,b) => new Date(b.ts) - new Date(a.ts));
+  return deduped.slice(0, 200);
 }
 
 function saveLocal() {
@@ -1821,31 +1956,27 @@ function renderReport() {
 }
 
 /* ── ACTIVITY LOG RENDER ────────────────────────────────────────── */
+let logFilterDays = 10;
+let logFilterUser = 'all';
+let logFilterChecklist = 'all';
+
 function renderActivityLog() {
   const wrap = document.getElementById('modalContent');
-
-  // Allow user to set their display name
   const currentNick = getUser();
 
-  let html = `
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px;padding:12px 14px;background:var(--off-white);border-radius:8px;border:1.5px solid var(--border)">
-      <span style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;white-space:nowrap">Your display name:</span>
-      <input type="text" id="nickInput" value="${currentNick}" style="font-family:'Nunito Sans',sans-serif;font-size:13px;border:1.5px solid var(--border);border-radius:5px;padding:5px 10px;flex:1;max-width:200px;color:var(--ink);outline:none;">
-      <button class="btn primary" onclick="saveNick()" style="padding:5px 12px">Save Name</button>
-    </div>`;
+  // Get unique users and checklists for filters
+  const users = [...new Set(activityLog.map(e => e.user))].sort();
+  const checklists = [...new Set(activityLog.map(e => e.checklist))].sort();
 
-  if (!activityLog.length) {
-    html += '<div class="no-data">No activity recorded yet. Changes will appear here as the team works.</div>';
-    wrap.innerHTML = html;
-    return;
-  }
-
-  // Group by date
-  const groups = {};
-  activityLog.forEach(entry => {
-    const date = new Date(entry.ts).toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric', year:'numeric' });
-    if (!groups[date]) groups[date] = [];
-    groups[date].push(entry);
+  // Filter log
+  const now = new Date();
+  const cutoff = new Date(now - logFilterDays * 24 * 60 * 60 * 1000);
+  const filtered = activityLog.filter(e => {
+    const d = new Date(e.ts);
+    if (d < cutoff) return false;
+    if (logFilterUser !== 'all' && e.user !== logFilterUser) return false;
+    if (logFilterChecklist !== 'all' && e.checklist !== logFilterChecklist) return false;
+    return true;
   });
 
   const actionColors = {
@@ -1859,30 +1990,147 @@ function renderActivityLog() {
     'Updated instructions':'#555552',
   };
 
+  // Action icons
+  const actionIcons = {
+    'Marked complete':     '✅',
+    'Checked complete':    '✅',
+    'Started task':        '▶',
+    'Set due date':        '📅',
+    'Set done date':       '✅',
+    'Unchecked':           '↩️',
+    'Updated field notes': '📝',
+    'Updated instructions':'📋',
+  };
+
+  let html = `
+    <!-- Name + Filter Controls -->
+    <div style="background:var(--off-white);border:1.5px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:16px">
+      
+      <!-- Display name row -->
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid var(--border)">
+        <span style="font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:1px;white-space:nowrap">👤 Your name:</span>
+        <input type="text" id="nickInput" value="${currentNick}" 
+          style="font-family:'Nunito Sans',sans-serif;font-size:13px;border:1.5px solid var(--border);border-radius:6px;padding:5px 10px;flex:1;max-width:180px;color:var(--ink);outline:none;"
+          placeholder="Enter your name…">
+        <button class="btn primary" onclick="saveNick()" style="padding:5px 12px;font-size:11px">Save</button>
+        <span style="font-size:11px;color:var(--muted)">This shows next to your changes in the log</span>
+      </div>
+
+      <!-- Filter row -->
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <span style="font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:1px">🔍 Filter:</span>
+        
+        <select onchange="logFilterDays=parseInt(this.value);renderActivityLog()" 
+          style="font-family:'Nunito Sans',sans-serif;font-size:12px;font-weight:700;border:1.5px solid var(--border);border-radius:6px;padding:5px 10px;color:var(--ink);background:#fff;cursor:pointer;outline:none;">
+          <option value="1" ${logFilterDays===1?'selected':''}>Today</option>
+          <option value="3" ${logFilterDays===3?'selected':''}>Last 3 days</option>
+          <option value="7" ${logFilterDays===7?'selected':''}>Last 7 days</option>
+          <option value="10" ${logFilterDays===10?'selected':''}>Last 10 days</option>
+          <option value="14" ${logFilterDays===14?'selected':''}>Last 14 days</option>
+          <option value="30" ${logFilterDays===30?'selected':''}>Last 30 days</option>
+          <option value="9999" ${logFilterDays===9999?'selected':''}>All time</option>
+        </select>
+
+        <select onchange="logFilterUser=this.value;renderActivityLog()"
+          style="font-family:'Nunito Sans',sans-serif;font-size:12px;font-weight:700;border:1.5px solid var(--border);border-radius:6px;padding:5px 10px;color:var(--ink);background:#fff;cursor:pointer;outline:none;">
+          <option value="all">All users</option>
+          ${users.map(u=>`<option value="${u}" ${logFilterUser===u?'selected':''}>${u}</option>`).join('')}
+        </select>
+
+        <select onchange="logFilterChecklist=this.value;renderActivityLog()"
+          style="font-family:'Nunito Sans',sans-serif;font-size:12px;font-weight:700;border:1.5px solid var(--border);border-radius:6px;padding:5px 10px;color:var(--ink);background:#fff;cursor:pointer;outline:none;">
+          <option value="all">All checklists</option>
+          ${checklists.map(c=>`<option value="${c}" ${logFilterChecklist===c?'selected':''}>${c}</option>`).join('')}
+        </select>
+
+        <span style="font-size:11px;color:var(--muted);margin-left:4px">${filtered.length} entries</span>
+      </div>
+    </div>`;
+
+  if (!filtered.length) {
+    html += '<div class="no-data">No activity in this time range.<br>Try expanding the date filter or selecting "All time".</div>';
+    wrap.innerHTML = html;
+    return;
+  }
+
+  // Summary stats for the filtered period
+  const completedCount = filtered.filter(e => e.action === 'Marked complete' || e.action === 'Checked complete').length;
+  const startedCount   = filtered.filter(e => e.action === 'Started task').length;
+  const notesCount     = filtered.filter(e => e.action === 'Updated field notes').length;
+  const activeUsers    = [...new Set(filtered.map(e=>e.user))].length;
+
+  html += `
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;margin-bottom:16px">
+      <div style="background:#fff;border:1.5px solid var(--border);border-radius:8px;padding:12px;text-align:center">
+        <div style="font-size:24px;font-weight:800;color:var(--lime)">${completedCount}</div>
+        <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-top:2px">Completed</div>
+      </div>
+      <div style="background:#fff;border:1.5px solid var(--border);border-radius:8px;padding:12px;text-align:center">
+        <div style="font-size:24px;font-weight:800;color:#2471a3">${startedCount}</div>
+        <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-top:2px">Started</div>
+      </div>
+      <div style="background:#fff;border:1.5px solid var(--border);border-radius:8px;padding:12px;text-align:center">
+        <div style="font-size:24px;font-weight:800;color:var(--charcoal)">${notesCount}</div>
+        <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-top:2px">Notes Added</div>
+      </div>
+      <div style="background:#fff;border:1.5px solid var(--border);border-radius:8px;padding:12px;text-align:center">
+        <div style="font-size:24px;font-weight:800;color:var(--warm-gray)">${activeUsers}</div>
+        <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-top:2px">Active Users</div>
+      </div>
+    </div>`;
+
+  // Group by date
+  const groups = {};
+  filtered.forEach(entry => {
+    const d = new Date(entry.ts);
+    const today = new Date();
+    const yesterday = new Date(today - 86400000);
+    let label;
+    if (d.toDateString() === today.toDateString()) label = 'Today — ' + d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
+    else if (d.toDateString() === yesterday.toDateString()) label = 'Yesterday — ' + d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
+    else label = d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
+    if (!groups[label]) groups[label] = [];
+    groups[label].push(entry);
+  });
+
   Object.entries(groups).forEach(([date, entries]) => {
-    html += `<div style="font-size:11px;font-weight:800;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;margin:16px 0 8px;padding-bottom:5px;border-bottom:1px solid var(--border)">${date}</div>`;
+    html += `
+      <div style="font-size:11px;font-weight:800;color:var(--charcoal);letter-spacing:1px;text-transform:uppercase;
+        margin:18px 0 8px;padding:6px 10px;background:var(--sage);border-radius:5px;display:inline-block">
+        ${date} &nbsp;·&nbsp; ${entries.length} change${entries.length!==1?'s':''}
+      </div><br>`;
+
     entries.forEach(e => {
       const color = actionColors[e.action] || 'var(--charcoal)';
-      const time = new Date(e.ts).toLocaleTimeString('en-US', { hour:'numeric', minute:'2-digit', hour12:true });
+      const icon  = actionIcons[e.action]  || '•';
+      const time  = new Date(e.ts).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true});
       html += `
-        <div style="display:flex;gap:10px;align-items:flex-start;padding:8px 10px;border-radius:6px;margin-bottom:4px;background:#fff;border:1px solid var(--border)">
-          <div style="font-size:10px;color:var(--muted);white-space:nowrap;padding-top:2px;min-width:60px">${time}</div>
+        <div style="display:flex;gap:10px;align-items:flex-start;padding:9px 12px;border-radius:7px;
+          margin-bottom:5px;background:#fff;border:1px solid var(--border);border-left:3px solid ${color}">
+          <div style="font-size:16px;flex-shrink:0;margin-top:1px">${icon}</div>
           <div style="flex:1;min-width:0">
-            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:2px">
-              <span style="font-size:11px;font-weight:800;background:var(--off-white);border:1px solid var(--border);padding:1px 7px;border-radius:10px;color:var(--charcoal)">${e.user}</span>
+            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:3px">
+              <span style="font-size:11px;font-weight:800;background:var(--charcoal);color:#fff;
+                padding:2px 8px;border-radius:10px">${e.user}</span>
               <span style="font-size:11px;font-weight:700;color:${color}">${e.action}</span>
-              ${e.detail ? `<span style="font-size:11px;color:var(--muted)">${e.detail}</span>` : ''}
+              ${e.detail?`<span style="font-size:11px;color:var(--muted);font-style:italic">${e.detail}</span>`:''}
+              <span style="font-size:10px;color:var(--muted);margin-left:auto;white-space:nowrap">${time}</span>
             </div>
-            <div style="font-size:12px;color:var(--ink);line-height:1.4"><span style="color:var(--lime);font-weight:700">${e.checklist}</span> — ${e.task}</div>
+            <div style="font-size:12px;color:var(--ink);line-height:1.4">
+              <span style="color:var(--lime);font-weight:700">${e.checklist}</span>
+              <span style="color:var(--muted)"> / </span>
+              ${e.task}
+            </div>
           </div>
         </div>`;
     });
   });
 
-  // Export log button
-  html += `<div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--border)">
-    <button class="btn" onclick="exportLog()" style="font-size:11px">⬇ Export Activity Log</button>
-  </div>`;
+  html += `
+    <div style="margin-top:18px;padding-top:12px;border-top:1px solid var(--border);display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn" onclick="exportLog()" style="font-size:11px">⬇ Export as CSV</button>
+      <button class="btn" onclick="exportLogPeriod()" style="font-size:11px">⬇ Export This View</button>
+    </div>`;
 
   wrap.innerHTML = html;
 }
@@ -1896,15 +2144,277 @@ function saveNick() {
 }
 
 function exportLog() {
+  const esc = v => (v||'').replace(/"/g,'""');
   let csv = 'Date/Time,User,Checklist,Task,Action,Detail\n';
   activityLog.forEach(e => {
-    const esc = v => (v||'').replace(/"/g,'""');
     csv += `"${formatLogTime(e.ts)}","${esc(e.user)}","${esc(e.checklist)}","${esc(e.task)}","${esc(e.action)}","${esc(e.detail)}"\n`;
   });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
-  a.download = 'relisto_activity_log.csv';
+  a.download = 'relisto_activity_log_full.csv';
   a.click();
+}
+
+function exportLogPeriod() {
+  // Export only the currently filtered view
+  const esc = v => (v||'').replace(/"/g,'""');
+  const now = new Date();
+  const cutoff = new Date(now - logFilterDays * 24 * 60 * 60 * 1000);
+  const filtered = activityLog.filter(e => {
+    const d = new Date(e.ts);
+    if (d < cutoff) return false;
+    if (logFilterUser !== 'all' && e.user !== logFilterUser) return false;
+    if (logFilterChecklist !== 'all' && e.checklist !== logFilterChecklist) return false;
+    return true;
+  });
+  let csv = 'Date/Time,User,Checklist,Task,Action,Detail\n';
+  filtered.forEach(e => {
+    csv += `"${formatLogTime(e.ts)}","${esc(e.user)}","${esc(e.checklist)}","${esc(e.task)}","${esc(e.action)}","${esc(e.detail)}"\n`;
+  });
+  const days = logFilterDays === 9999 ? 'all-time' : logFilterDays+'days';
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download = `relisto_activity_${days}.csv`;
+  a.click();
+}
+
+/* ── SNAPSHOTS ──────────────────────────────────────────────────── */
+function takeSnapshotIfNeeded() {
+  const todayStr = new Date().toISOString().split('T')[0];
+  // Check if we already have a snapshot for today
+  const alreadyHaveToday = snapshots.some(s => s.ts.startsWith(todayStr));
+  if (alreadyHaveToday) return;
+
+  // Create snapshot
+  const snap = {
+    ts:             new Date().toISOString(),
+    label:          'Auto-snapshot — ' + new Date().toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'}),
+    allState:       JSON.parse(JSON.stringify(allState)),
+    allCustom:      JSON.parse(JSON.stringify(allCustom)),
+    userChecklists: [...userChecklists],
+    takenBy:        getUser()
+  };
+  snapshots.unshift(snap);
+
+  // Keep only 30 days of snapshots
+  if (snapshots.length > 30) snapshots = snapshots.slice(0, 30);
+  console.log('Snapshot taken for', todayStr);
+}
+
+function takeManualSnapshot(label) {
+  const snap = {
+    ts:             new Date().toISOString(),
+    label:          label || ('Manual snapshot — ' + new Date().toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'})),
+    allState:       JSON.parse(JSON.stringify(allState)),
+    allCustom:      JSON.parse(JSON.stringify(allCustom)),
+    userChecklists: [...userChecklists],
+    takenBy:        getUser()
+  };
+  snapshots.unshift(snap);
+  if (snapshots.length > 30) snapshots = snapshots.slice(0, 30);
+  saveToBin();
+  showToast('✓ Snapshot saved!');
+  renderSnapshotModal();
+}
+
+let previewingSnapshot = null;
+
+function openSnapshotModal() {
+  document.getElementById('snapshotBg').classList.add('open');
+  previewingSnapshot = null;
+  renderSnapshotModal();
+}
+
+function closeSnapshotModal() {
+  document.getElementById('snapshotBg').classList.remove('open');
+  previewingSnapshot = null;
+}
+
+function renderSnapshotModal() {
+  const wrap = document.getElementById('snapshotContent');
+
+  if (previewingSnapshot !== null) {
+    renderSnapshotPreview(wrap, previewingSnapshot);
+    return;
+  }
+
+  let html = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px">
+      <p style="font-size:13px;color:var(--muted)">Daily snapshots are taken automatically. You can also save one manually at any time.</p>
+      <button class="btn primary" onclick="promptManualSnapshot()" style="font-size:12px;white-space:nowrap">📸 Save Snapshot Now</button>
+    </div>`;
+
+  if (!snapshots.length) {
+    html += '<div class="no-data">No snapshots yet. One will be created automatically on your next save.</div>';
+    wrap.innerHTML = html;
+    return;
+  }
+
+  html += '<div style="display:flex;flex-direction:column;gap:8px">';
+
+  snapshots.forEach((snap, idx) => {
+    const d = new Date(snap.ts);
+    const dateStr = d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
+    const timeStr = d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true});
+
+    // Count tasks done in snapshot
+    let snapDone = 0, snapTotal = 0;
+    Object.values(snap.allState||{}).forEach(clState => {
+      Object.values(clState).forEach(t => { snapTotal++; if(t.done) snapDone++; });
+    });
+    const snapPct = snapTotal ? Math.round((snapDone/snapTotal)*100) : 0;
+
+    // Is this today's snapshot?
+    const todayStr = new Date().toISOString().split('T')[0];
+    const isToday = snap.ts.startsWith(todayStr);
+    const isManual = snap.label.startsWith('Manual');
+
+    html += `
+      <div style="background:#fff;border:1.5px solid var(--border);border-radius:9px;padding:14px 16px;
+        ${isToday?'border-color:var(--lime);':''}">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap">
+          <div style="flex:1;min-width:0">
+            <div style="display:flex;align-items:center;gap:7px;margin-bottom:4px;flex-wrap:wrap">
+              <span style="font-size:13px;font-weight:800;color:var(--charcoal)">${dateStr}</span>
+              ${isToday?'<span style="font-size:10px;background:var(--lime);color:var(--charcoal);padding:1px 7px;border-radius:10px;font-weight:800">TODAY</span>':''}
+              ${isManual?'<span style="font-size:10px;background:var(--charcoal);color:#fff;padding:1px 7px;border-radius:10px;font-weight:800">MANUAL</span>':''}
+            </div>
+            <div style="font-size:11px;color:var(--muted);margin-bottom:6px">
+              Taken at ${timeStr} by <b>${snap.takenBy||'Unknown'}</b>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px">
+              <div style="flex:1;height:6px;background:var(--border);border-radius:3px;overflow:hidden;max-width:120px">
+                <div style="height:100%;background:var(--lime);width:${snapPct}%;border-radius:3px"></div>
+              </div>
+              <span style="font-size:12px;font-weight:700;color:var(--charcoal)">${snapPct}% complete (${snapDone}/${snapTotal} tasks)</span>
+            </div>
+          </div>
+          <div style="display:flex;gap:7px;flex-shrink:0">
+            <button class="btn" onclick="previewSnapshot(${idx})" style="font-size:11px">👁 Preview</button>
+            <button class="btn" onclick="confirmRestore(${idx})" 
+              style="font-size:11px;background:#fff3f3;border-color:#e0a0a0;color:#c0392b">↩ Restore</button>
+          </div>
+        </div>
+      </div>`;
+  });
+
+  html += '</div>';
+  wrap.innerHTML = html;
+}
+
+function promptManualSnapshot() {
+  const label = prompt('Name this snapshot (optional):', 'Manual snapshot — ' + new Date().toLocaleDateString('en-US',{month:'short',day:'numeric'}));
+  if (label === null) return; // cancelled
+  takeManualSnapshot(label || undefined);
+}
+
+function previewSnapshot(idx) {
+  previewingSnapshot = idx;
+  renderSnapshotModal();
+}
+
+function renderSnapshotPreview(wrap, idx) {
+  const snap = snapshots[idx];
+  const d = new Date(snap.ts);
+  const dateStr = d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
+  const timeStr = d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true});
+
+  // Build comparison: snapshot vs current
+  const names = getAllChecklistNames();
+  let html = `
+    <div style="margin-bottom:16px">
+      <button class="btn" onclick="previewingSnapshot=null;renderSnapshotModal()" style="font-size:11px;margin-bottom:12px">← Back to Snapshots</button>
+      <div style="background:var(--off-white);border:1.5px solid var(--border);border-radius:9px;padding:14px 16px;margin-bottom:14px">
+        <div style="font-size:14px;font-weight:800;color:var(--charcoal);margin-bottom:4px">📸 ${dateStr} at ${timeStr}</div>
+        <div style="font-size:12px;color:var(--muted)">Taken by ${snap.takenBy||'Unknown'} · Comparing snapshot vs current state</div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
+      <div style="text-align:center;font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:1px;padding:6px;background:var(--off-white);border-radius:5px">📸 Snapshot</div>
+      <div style="text-align:center;font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:1px;padding:6px;background:var(--off-white);border-radius:5px">⚡ Current</div>
+    </div>`;
+
+  names.forEach(clName => {
+    const secs = getSections(clName);
+    const snapClState = snap.allState?.[clName] || {};
+    const currClState = allState[clName] || {};
+    const icon = BUILT_IN_CHECKLISTS[clName]?.icon || '📋';
+
+    // Count done in snap vs current
+    let snapD=0, snapT=0, currD=0, currT=0;
+    secs.forEach(sec => {
+      sec.tasks.forEach((_,ti) => {
+        const key = sec.id+'_t'+ti;
+        snapT++; if(snapClState[key]?.done) snapD++;
+        currT++; if(currClState[key]?.done) currD++;
+      });
+    });
+    const snapPct = snapT?Math.round((snapD/snapT)*100):0;
+    const currPct = currT?Math.round((currD/currT)*100):0;
+    const diff = currPct - snapPct;
+    const diffStr = diff > 0 ? `+${diff}%` : diff < 0 ? `${diff}%` : 'No change';
+    const diffColor = diff > 0 ? 'var(--done-text)' : diff < 0 ? '#c0392b' : 'var(--muted)';
+
+    html += `
+      <div style="background:#fff;border:1.5px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:8px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+          <span style="font-size:13px;font-weight:800;color:var(--charcoal)">${icon} ${clName}</span>
+          <span style="font-size:12px;font-weight:800;color:${diffColor}">${diffStr}</span>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <div style="text-align:center;padding:8px;background:var(--off-white);border-radius:6px">
+            <div style="font-size:20px;font-weight:800;color:var(--charcoal)">${snapPct}%</div>
+            <div style="font-size:11px;color:var(--muted)">${snapD}/${snapT} done</div>
+          </div>
+          <div style="text-align:center;padding:8px;background:var(--done-bg);border-radius:6px">
+            <div style="font-size:20px;font-weight:800;color:var(--done-text)">${currPct}%</div>
+            <div style="font-size:11px;color:var(--muted)">${currD}/${currT} done</div>
+          </div>
+        </div>
+      </div>`;
+  });
+
+  html += `
+    <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border);display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn" onclick="previewingSnapshot=null;renderSnapshotModal()" style="font-size:12px">← Back</button>
+      <button class="btn" onclick="confirmRestore(${idx})" 
+        style="font-size:12px;background:#fff3f3;border-color:#e0a0a0;color:#c0392b;font-weight:800">
+        ↩ Restore to This Snapshot
+      </button>
+    </div>`;
+
+  wrap.innerHTML = html;
+}
+
+function confirmRestore(idx) {
+  const snap = snapshots[idx];
+  const d = new Date(snap.ts);
+  const dateStr = d.toLocaleDateString('en-US',{weekday:'long',month:'short',day:'numeric',year:'numeric'});
+  const timeStr = d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true});
+
+  if (!confirm(`Restore to snapshot from ${dateStr} at ${timeStr}?\n\nThis will replace the current form state with the snapshot. A backup snapshot of the current state will be saved first.\n\nThis cannot be undone.`)) return;
+
+  // Save current state as a manual snapshot first (safety net)
+  takeManualSnapshot('Pre-restore backup — ' + new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}));
+
+  // Restore snapshot
+  allState = JSON.parse(JSON.stringify(snap.allState||{}));
+  allCustom = JSON.parse(JSON.stringify(snap.allCustom||{}));
+  userChecklists = [...(snap.userChecklists||[])];
+
+  // Log the restore action
+  logActivity('System', 'All checklists', 'Restored snapshot', dateStr + ' at ' + timeStr);
+
+  initAllState();
+  renderTabs();
+  renderContent();
+  updateProgress();
+
+  // Save restored state to database
+  saveToBin();
+
+  closeSnapshotModal();
+  showToast('✓ Restored to ' + dateStr);
 }
 
 /* ── CSV EXPORT ─────────────────────────────────────────────────── */
@@ -1935,6 +2445,7 @@ function showToast(msg) {
 
 document.getElementById('modalBg').addEventListener('click',e=>{ if(e.target===e.currentTarget)closeModal(); });
 document.getElementById('newChecklistBg').addEventListener('click',e=>{ if(e.target===e.currentTarget)closeNewChecklist(); });
+document.getElementById('snapshotBg').addEventListener('click',e=>{ if(e.target===e.currentTarget)closeSnapshotModal(); });
 document.getElementById('toolbar').style.display = 'none'; // hidden on dashboard
 
 /* ── BOOT ─────────────────────────────────────────────────────── */
@@ -1979,6 +2490,7 @@ async function silentPoll() {
       allCustom = d.record.allCustom || {};
       userChecklists = d.record.userChecklists || [];
       activityLog = d.record.activityLog || [];
+      snapshots = d.record.snapshots || [];
       initAllState();
       renderTabs();
       renderContent();
